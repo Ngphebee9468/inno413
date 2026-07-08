@@ -8,6 +8,26 @@ import { GarmentPreview } from "./GarmentPreview";
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 const steps = ["Design", "Material", "Sizes", "Delivery", "Review"];
+const fontChoices = [
+  "Aptos",
+  "Arial",
+  "Arial Black",
+  "Bahnschrift",
+  "Calibri",
+  "Cambria",
+  "Candara",
+  "Consolas",
+  "Constantia",
+  "Corbel",
+  "Franklin Gothic Medium",
+  "Georgia",
+  "Impact",
+  "Segoe UI",
+  "Tahoma",
+  "Times New Roman",
+  "Trebuchet MS",
+  "Verdana",
+];
 
 type Props = {
   materials: MaterialType[];
@@ -20,6 +40,7 @@ export function OrderForm({ materials }: Props) {
   const [reference, setReference] = useState("");
   const [paymentUrl, setPaymentUrl] = useState("");
   const [decalUrl, setDecalUrl] = useState("");
+  const [customFontUrl, setCustomFontUrl] = useState("");
   const [form, setForm] = useState({
     customer_name: "",
     customer_email: "",
@@ -30,6 +51,9 @@ export function OrderForm({ materials }: Props) {
     garment_type: "jersey",
     base_colour: "#18365f",
     custom_text: "10",
+    font_family: "Bahnschrift",
+    font_size: "150",
+    team_name: "",
     delivery_address: "",
     delivery_method: "deliver",
     needed_by: "",
@@ -56,26 +80,39 @@ export function OrderForm({ materials }: Props) {
     );
   }
 
-  async function uploadFile(file: File) {
+  async function uploadStorageFile(file: File, folder: string) {
     setError("");
     if (file.size > 10 * 1024 * 1024) {
       setError("File too large, max 10MB");
-      return;
+      return "";
     }
 
     const supabase = createClient();
-    const path = `orders/${crypto.randomUUID()}-${file.name}`;
+    const path = `${folder}/${crypto.randomUUID()}-${file.name}`;
     const { error: uploadError } = await supabase.storage.from("design-files").upload(path, file, {
       upsert: false,
     });
 
     if (uploadError) {
       setError(uploadError.message);
-      return;
+      return "";
     }
 
     const { data } = supabase.storage.from("design-files").getPublicUrl(path);
-    setDecalUrl(data.publicUrl);
+    return data.publicUrl;
+  }
+
+  async function uploadFile(file: File) {
+    const publicUrl = await uploadStorageFile(file, "orders");
+    if (publicUrl) setDecalUrl(publicUrl);
+  }
+
+  async function uploadFontFile(file: File) {
+    const publicUrl = await uploadStorageFile(file, "fonts");
+    if (publicUrl) {
+      setCustomFontUrl(publicUrl);
+      update("font_family", "Uploaded Jersey Font");
+    }
   }
 
   function validate() {
@@ -105,8 +142,12 @@ export function OrderForm({ materials }: Props) {
           design_file_url: decalUrl,
           preview_config: {
             colour: form.base_colour,
+            customFontUrl,
+            fontFamily: form.font_family,
+            fontSize: Number(form.font_size),
             garmentType: form.garment_type,
             text: form.custom_text,
+            teamName: form.team_name,
             decalUrl,
           },
           line_items: lineItems.filter((item) => Number(item.quantity) > 0),
@@ -148,9 +189,13 @@ export function OrderForm({ materials }: Props) {
     <div className="split">
       <GarmentPreview
         colour={form.base_colour}
+        customFontUrl={customFontUrl}
         decalUrl={decalUrl}
+        fontFamily={form.font_family}
+        fontSize={Number(form.font_size)}
         garmentType={form.garment_type}
         numberText={form.custom_text}
+        teamName={form.team_name}
       />
 
       <section>
@@ -173,6 +218,10 @@ export function OrderForm({ materials }: Props) {
               <div className="field"><label>Design Service</label><select value={form.design_service} onChange={(e) => update("design_service", e.target.value)}><option value="use_mine">Use my design</option><option value="redesign_mine">Redesign mine</option><option value="from_scratch">Design from scratch</option><option value="slight_modification">Slight modification</option></select></div>
               <div className="field"><label>Upload Design</label><input accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" type="file" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} /></div>
               <div className="field"><label>Number / Text</label><input value={form.custom_text} onChange={(e) => update("custom_text", e.target.value)} /></div>
+              <div className="field"><label>Team Name (Optional)</label><input value={form.team_name} onChange={(e) => update("team_name", e.target.value)} /></div>
+              <div className="field"><label>Font</label><select value={form.font_family} onChange={(e) => update("font_family", e.target.value)}>{fontChoices.map((font) => <option key={font} value={font}>{font}</option>)}{customFontUrl ? <option value="Uploaded Jersey Font">Uploaded Jersey Font</option> : null}</select></div>
+              <div className="field"><label>Font Size</label><input max="240" min="64" type="range" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /><input max="240" min="64" type="number" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /></div>
+              <div className="field"><label>Upload Font</label><input accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" type="file" onChange={(e) => e.target.files?.[0] && uploadFontFile(e.target.files[0])} /></div>
               <div className="field full"><label>Design Notes</label><textarea value={form.design_notes} onChange={(e) => update("design_notes", e.target.value)} /></div>
             </div>
           ) : null}
@@ -208,6 +257,7 @@ export function OrderForm({ materials }: Props) {
               <p><span>Customer</span>{form.customer_name} / {form.customer_email}</p>
               <p><span>Material</span>{materials.find((material) => material.id === form.material_type_id)?.name}</p>
               <p><span>Garment</span>{form.garment_type}, {totalQuantity} pieces</p>
+              <p><span>Team / Font</span>{form.team_name || "No team name"} / {form.font_family} / {form.font_size}px</p>
               <p><span>Deposit</span>SGD {deposit.toFixed(2)}</p>
               <p><span>Design upload</span>{decalUrl ? "Attached" : "No file attached"}</p>
             </div>

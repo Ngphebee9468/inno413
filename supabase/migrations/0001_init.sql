@@ -20,7 +20,7 @@ drop policy if exists "material_types_v1_write" on material_types;
 create policy "material_types_v1_write" on material_types for all using (true) with check (true);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('design-files', 'design-files', true, 10485760, array['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'application/pdf'])
+values ('design-files', 'design-files', true, 10485760, array['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'application/pdf', 'font/ttf', 'font/otf', 'font/woff', 'font/woff2', 'application/font-woff', 'application/font-woff2', 'application/x-font-ttf', 'application/x-font-otf', 'application/octet-stream'])
 on conflict (id) do update
 set public = excluded.public,
     file_size_limit = excluded.file_size_limit,

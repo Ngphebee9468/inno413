@@ -45,6 +45,12 @@ function makeSleeveShape(side: -1 | 1) {
   return shape;
 }
 
+function makeShapeGeometry(shape: THREE.Shape) {
+  const geometry = new THREE.ShapeGeometry(shape, 48);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function createPanelTexture({
   colour,
   decalUrl,
@@ -181,7 +187,13 @@ export function GarmentPreview({
       const camera = new THREE.PerspectiveCamera(32, target.clientWidth / 460, 0.1, 100);
       camera.position.set(0, 0.18, 5.4);
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      let renderer: THREE.WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+      } catch {
+        target.innerHTML = '<div class="empty-state">3D preview is not available in this browser.</div>';
+        return;
+      }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(target.clientWidth, 460);
       renderer.shadowMap.enabled = true;
@@ -225,17 +237,19 @@ export function GarmentPreview({
         side: THREE.DoubleSide,
       });
 
-      const torso = new THREE.Mesh(makeTorsoShape(garmentType), torsoMaterial);
+      const torsoGeometry = makeShapeGeometry(makeTorsoShape(garmentType));
+      const torso = new THREE.Mesh(torsoGeometry, torsoMaterial);
       torso.castShadow = true;
       group.add(torso);
 
-      const backPanel = new THREE.Mesh(makeTorsoShape(garmentType), sideMaterial);
+      const backGeometry = makeShapeGeometry(makeTorsoShape(garmentType));
+      const backPanel = new THREE.Mesh(backGeometry, sideMaterial);
       backPanel.position.z = -0.11;
       backPanel.scale.set(0.98, 0.98, 0.98);
       group.add(backPanel);
 
       for (const side of [-1, 1] as const) {
-        const sleeve = new THREE.Mesh(makeSleeveShape(side), sideMaterial);
+        const sleeve = new THREE.Mesh(makeShapeGeometry(makeSleeveShape(side)), sideMaterial);
         sleeve.position.z = -0.02;
         sleeve.castShadow = true;
         group.add(sleeve);
@@ -320,6 +334,9 @@ export function GarmentPreview({
       return () => {
         cancelAnimationFrame(frame);
         window.removeEventListener("resize", resize);
+        group.traverse((object) => {
+          if (object instanceof THREE.Mesh) object.geometry.dispose();
+        });
         panelTexture.dispose();
         torsoMaterial.dispose();
         sideMaterial.dispose();

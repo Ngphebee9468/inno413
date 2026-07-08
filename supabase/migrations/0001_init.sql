@@ -1,3 +1,9 @@
+drop table if exists activities cascade;
+drop table if exists invoices cascade;
+drop table if exists order_line_items cascade;
+drop table if exists orders cascade;
+drop table if exists material_types cascade;
+
 create table if not exists material_types (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,

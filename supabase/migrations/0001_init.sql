@@ -13,6 +13,18 @@ create policy "material_types_v1_read" on material_types for select using (true)
 drop policy if exists "material_types_v1_write" on material_types;
 create policy "material_types_v1_write" on material_types for all using (true) with check (true);
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('design-files', 'design-files', true, 10485760, array['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'application/pdf'])
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "design_files_v1_read" on storage.objects;
+create policy "design_files_v1_read" on storage.objects for select using (bucket_id = 'design-files');
+drop policy if exists "design_files_v1_write" on storage.objects;
+create policy "design_files_v1_write" on storage.objects for all using (bucket_id = 'design-files') with check (bucket_id = 'design-files');
+
 insert into material_types (id, name, description, slug) values
   ('11111111-0000-0000-0000-000000000001', 'Dry-Fit', 'Moisture-wicking performance fabric', 'dry-fit'),
   ('11111111-0000-0000-0000-000000000002', 'Anti-Bacterial', 'Treated fabric that inhibits bacteria growth', 'anti-bacterial'),
@@ -120,21 +132,27 @@ insert into orders (id, reference_code, customer_name, customer_email, customer_
   ('22222222-0000-0000-0000-000000000004', 'ORD-DEMO0004', 'Priya Ramasamy', 'priya@example.com', '+60163334444', 'use_mine', 'tshirt', 'Red', 'self_collect', null, '2025-08-05', 30, 'paid', 'delivered', 'Family reunion shirts, design ready, just print as-is', '11111111-0000-0000-0000-000000000004')
 on conflict (reference_code) do nothing;
 
-insert into order_line_items (order_id, size, quantity, colour) values
-  ('22222222-0000-0000-0000-000000000001', 'S', 4, 'Navy Blue'),
-  ('22222222-0000-0000-0000-000000000001', 'M', 8, 'Navy Blue'),
-  ('22222222-0000-0000-0000-000000000001', 'L', 6, 'Navy Blue'),
-  ('22222222-0000-0000-0000-000000000001', 'XL', 4, 'Navy Blue'),
-  ('22222222-0000-0000-0000-000000000002', 'M', 20, 'White'),
-  ('22222222-0000-0000-0000-000000000002', 'L', 20, 'White'),
-  ('22222222-0000-0000-0000-000000000002', 'XL', 10, 'White'),
-  ('22222222-0000-0000-0000-000000000003', 'M', 5, 'Black'),
-  ('22222222-0000-0000-0000-000000000003', 'L', 5, 'Black'),
-  ('22222222-0000-0000-0000-000000000004', 'S', 10, 'Red'),
-  ('22222222-0000-0000-0000-000000000004', 'M', 10, 'Red'),
-  ('22222222-0000-0000-0000-000000000004', 'L', 10, 'Red');
+insert into order_line_items (id, order_id, size, quantity, colour) values
+  ('33333333-0000-0000-0000-000000000001', '22222222-0000-0000-0000-000000000001', 'S', 4, 'Navy Blue'),
+  ('33333333-0000-0000-0000-000000000002', '22222222-0000-0000-0000-000000000001', 'M', 8, 'Navy Blue'),
+  ('33333333-0000-0000-0000-000000000003', '22222222-0000-0000-0000-000000000001', 'L', 6, 'Navy Blue'),
+  ('33333333-0000-0000-0000-000000000004', '22222222-0000-0000-0000-000000000001', 'XL', 4, 'Navy Blue'),
+  ('33333333-0000-0000-0000-000000000005', '22222222-0000-0000-0000-000000000002', 'M', 20, 'White'),
+  ('33333333-0000-0000-0000-000000000006', '22222222-0000-0000-0000-000000000002', 'L', 20, 'White'),
+  ('33333333-0000-0000-0000-000000000007', '22222222-0000-0000-0000-000000000002', 'XL', 10, 'White'),
+  ('33333333-0000-0000-0000-000000000008', '22222222-0000-0000-0000-000000000003', 'M', 5, 'Black'),
+  ('33333333-0000-0000-0000-000000000009', '22222222-0000-0000-0000-000000000003', 'L', 5, 'Black'),
+  ('33333333-0000-0000-0000-000000000010', '22222222-0000-0000-0000-000000000004', 'S', 10, 'Red'),
+  ('33333333-0000-0000-0000-000000000011', '22222222-0000-0000-0000-000000000004', 'M', 10, 'Red'),
+  ('33333333-0000-0000-0000-000000000012', '22222222-0000-0000-0000-000000000004', 'L', 10, 'Red')
+on conflict (id) do nothing;
 
 insert into invoices (order_id, invoice_number, subtotal, deposit_paid, balance_due, payment_status, issued_at, paid_at) values
   ('22222222-0000-0000-0000-000000000003', 'INV-DEMO0001', 550.00, 100.00, 450.00, 'paid', now() - interval '5 days', now() - interval '2 days'),
   ('22222222-0000-0000-0000-000000000004', 'INV-DEMO0002', 900.00, 150.00, 750.00, 'paid', now() - interval '10 days', now() - interval '7 days')
 on conflict (invoice_number) do nothing;
+
+insert into activities (id, entity_type, entity_id, action, actor, metadata) values
+  ('44444444-0000-0000-0000-000000000001', 'orders', '22222222-0000-0000-0000-000000000001', 'status_changed', 'seed', '{"to":"in_production"}'),
+  ('44444444-0000-0000-0000-000000000002', 'invoices', '22222222-0000-0000-0000-000000000003', 'invoice_paid', 'seed', '{"invoice_number":"INV-DEMO0001"}')
+on conflict (id) do nothing;

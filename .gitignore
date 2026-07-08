@@ -6,6 +6,7 @@ node_modules/
 *.pem
 npm-debug.log*
 .env*.local
+.vercel-cache/
 .env
 .vercel
 *.tsbuildinfo

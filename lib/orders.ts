@@ -26,9 +26,9 @@ export function getUrgency(order: Pick<Order, "needed_by" | "created_at">) {
 }
 
 export function formatMoney(value?: number | null) {
-  return new Intl.NumberFormat("en-MY", {
+  return new Intl.NumberFormat("en-SG", {
     style: "currency",
-    currency: "MYR",
+    currency: "SGD",
   }).format(Number(value ?? 0));
 }
 

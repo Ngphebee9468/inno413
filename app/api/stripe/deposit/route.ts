@@ -28,7 +28,7 @@ export async function POST(request: Request) {
           {
             quantity: 1,
             price_data: {
-              currency: "myr",
+              currency: "sgd",
               product_data: { name: `Deposit for ${order.reference_code}` },
               unit_amount: Math.round(Number(order.deposit_amount ?? 0) * 100),
             },

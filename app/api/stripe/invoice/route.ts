@@ -28,7 +28,7 @@ export async function POST(request: Request) {
           {
             quantity: 1,
             price_data: {
-              currency: "myr",
+              currency: "sgd",
               product_data: { name: `Balance for ${invoice.invoice_number}` },
               unit_amount: Math.round(Number(invoice.balance_due ?? 0) * 100),
             },

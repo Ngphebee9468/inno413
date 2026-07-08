@@ -208,7 +208,7 @@ export function OrderForm({ materials }: Props) {
               <p><span>Customer</span>{form.customer_name} / {form.customer_email}</p>
               <p><span>Material</span>{materials.find((material) => material.id === form.material_type_id)?.name}</p>
               <p><span>Garment</span>{form.garment_type}, {totalQuantity} pieces</p>
-              <p><span>Deposit</span>MYR {deposit.toFixed(2)}</p>
+              <p><span>Deposit</span>SGD {deposit.toFixed(2)}</p>
               <p><span>Design upload</span>{decalUrl ? "Attached" : "No file attached"}</p>
             </div>
           ) : null}

@@ -1,45 +1,53 @@
-create table if not exists tshirt_materials (
+create table if not exists material_types (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
+  created_at timestamptz not null default now(),
   name text not null,
   description text,
-  price_modifier_pct numeric not null default 0,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now()
+  slug text unique not null
 );
 
-alter table tshirt_materials enable row level security;
-drop policy if exists "tshirt_materials_v1_read" on tshirt_materials;
-create policy "tshirt_materials_v1_read" on tshirt_materials for select using (true);
-drop policy if exists "tshirt_materials_v1_write" on tshirt_materials;
-create policy "tshirt_materials_v1_write" on tshirt_materials for all using (true) with check (true);
+alter table material_types enable row level security;
+drop policy if exists "material_types_v1_read" on material_types;
+create policy "material_types_v1_read" on material_types for select using (true);
+drop policy if exists "material_types_v1_write" on material_types;
+create policy "material_types_v1_write" on material_types for all using (true) with check (true);
+
+insert into material_types (id, name, description, slug) values
+  ('11111111-0000-0000-0000-000000000001', 'Dry-Fit', 'Moisture-wicking performance fabric', 'dry-fit'),
+  ('11111111-0000-0000-0000-000000000002', 'Anti-Bacterial', 'Treated fabric that inhibits bacteria growth', 'anti-bacterial'),
+  ('11111111-0000-0000-0000-000000000003', 'Stretch-Resistant Cotton', 'Heavy-duty cotton that holds its shape', 'stretch-resistant-cotton'),
+  ('11111111-0000-0000-0000-000000000004', 'Bamboo Blend', 'Eco-friendly soft bamboo-cotton blend', 'bamboo-blend')
+on conflict (slug) do nothing;
 
 create table if not exists orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
+  created_at timestamptz not null default now(),
+  reference_code text unique not null default 'ORD-' || upper(substring(gen_random_uuid()::text, 1, 8)),
   customer_name text not null,
   customer_email text not null,
-  design_service text not null default 'use_as_is',
-  design_notes text,
+  customer_phone text,
+  design_service text not null check (design_service in ('use_mine', 'redesign_mine', 'from_scratch', 'slight_modification')),
   design_file_url text,
-  material_id uuid references tshirt_materials(id),
-  shirt_colour text,
-  print_zone text not null default 'front',
-  delivery_date date,
-  delivery_type text not null default 'delivery',
+  design_notes text,
+  material_type_id uuid references material_types(id),
+  garment_type text not null default 'tshirt',
+  base_colour text,
+  preview_config jsonb,
   delivery_address text,
-  status text not null default 'submitted',
-  quoted_price numeric,
-  deposit_paid numeric not null default 0,
-  balance_paid numeric not null default 0,
-  stripe_session_id text,
-  stripe_invoice_id text,
-  is_urgent boolean not null default false,
-  ai_design_suggestion text,
-  ai_design_suggestion_source text,
-  ai_design_suggestion_confidence numeric,
-  ai_design_suggestion_review_status text default 'unreviewed',
-  created_at timestamptz not null default now()
+  delivery_method text check (delivery_method in ('deliver', 'self_collect')),
+  needed_by date,
+  total_quantity int not null default 0,
+  deposit_amount numeric(10,2),
+  deposit_status text not null default 'unpaid' check (deposit_status in ('unpaid', 'paid', 'waived')),
+  stripe_deposit_session_id text,
+  order_status text not null default 'pending' check (order_status in ('pending', 'in_review', 'in_production', 'ready', 'delivered', 'cancelled')),
+  staff_notes text,
+  ai_summary text,
+  ai_summary_source text,
+  ai_summary_confidence numeric,
+  ai_summary_review_status text default 'unreviewed'
 );
 
 alter table orders enable row level security;
@@ -48,88 +56,85 @@ create policy "orders_v1_read" on orders for select using (true);
 drop policy if exists "orders_v1_write" on orders;
 create policy "orders_v1_write" on orders for all using (true) with check (true);
 
-create table if not exists order_items (
+create table if not exists order_line_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
-  order_id uuid references orders(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  order_id uuid not null references orders(id) on delete cascade,
   size text not null,
-  quantity integer not null default 1,
-  created_at timestamptz not null default now()
+  quantity int not null default 1,
+  unit_price numeric(10,2),
+  colour text,
+  custom_text text
 );
 
-alter table order_items enable row level security;
-drop policy if exists "order_items_v1_read" on order_items;
-create policy "order_items_v1_read" on order_items for select using (true);
-drop policy if exists "order_items_v1_write" on order_items;
-create policy "order_items_v1_write" on order_items for all using (true) with check (true);
+alter table order_line_items enable row level security;
+drop policy if exists "order_line_items_v1_read" on order_line_items;
+create policy "order_line_items_v1_read" on order_line_items for select using (true);
+drop policy if exists "order_line_items_v1_write" on order_line_items;
+create policy "order_line_items_v1_write" on order_line_items for all using (true) with check (true);
 
-create table if not exists payments (
+create table if not exists invoices (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
-  order_id uuid references orders(id) on delete cascade,
-  amount numeric not null,
-  payment_type text not null default 'deposit',
-  stripe_payment_intent_id text,
-  status text not null default 'pending',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  order_id uuid not null references orders(id) on delete cascade,
+  invoice_number text unique not null default 'INV-' || upper(substring(gen_random_uuid()::text, 1, 8)),
+  subtotal numeric(10,2) not null default 0,
+  deposit_paid numeric(10,2) not null default 0,
+  balance_due numeric(10,2) not null default 0,
+  payment_status text not null default 'outstanding' check (payment_status in ('outstanding', 'paid', 'partial', 'waived')),
+  stripe_payment_session_id text,
+  notes text,
+  issued_at timestamptz,
+  paid_at timestamptz
 );
 
-alter table payments enable row level security;
-drop policy if exists "payments_v1_read" on payments;
-create policy "payments_v1_read" on payments for select using (true);
-drop policy if exists "payments_v1_write" on payments;
-create policy "payments_v1_write" on payments for all using (true) with check (true);
+alter table invoices enable row level security;
+drop policy if exists "invoices_v1_read" on invoices;
+create policy "invoices_v1_read" on invoices for select using (true);
+drop policy if exists "invoices_v1_write" on invoices;
+create policy "invoices_v1_write" on invoices for all using (true) with check (true);
 
-create table if not exists audit_logs (
+create table if not exists activities (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
-  actor text not null,
+  created_at timestamptz not null default now(),
+  entity_type text not null,
+  entity_id uuid not null,
   action text not null,
-  object_type text not null,
-  object_id uuid,
-  payload jsonb,
-  created_at timestamptz not null default now()
+  actor text,
+  metadata jsonb
 );
 
-alter table audit_logs enable row level security;
-drop policy if exists "audit_logs_v1_read" on audit_logs;
-create policy "audit_logs_v1_read" on audit_logs for select using (true);
-drop policy if exists "audit_logs_v1_write" on audit_logs;
-create policy "audit_logs_v1_write" on audit_logs for all using (true) with check (true);
+alter table activities enable row level security;
+drop policy if exists "activities_v1_read" on activities;
+create policy "activities_v1_read" on activities for select using (true);
+drop policy if exists "activities_v1_write" on activities;
+create policy "activities_v1_write" on activities for all using (true) with check (true);
 
-insert into tshirt_materials (id, name, description, price_modifier_pct, is_active) values
-  ('a1000000-0000-0000-0000-000000000001', 'Dry-Fit', 'Moisture-wicking polyester ideal for sports jerseys', 10, true),
-  ('a1000000-0000-0000-0000-000000000002', 'Anti-Bacterial', 'Treated cotton blend that inhibits odour-causing bacteria', 15, true),
-  ('a1000000-0000-0000-0000-000000000003', 'Stretch-Resistant', 'Reinforced weave that holds shape after repeated wear', 8, true),
-  ('a1000000-0000-0000-0000-000000000004', 'Standard Cotton', '100% ring-spun cotton, classic feel and print surface', 0, true)
-on conflict (id) do nothing;
+insert into orders (id, reference_code, customer_name, customer_email, customer_phone, design_service, garment_type, base_colour, delivery_method, delivery_address, needed_by, total_quantity, deposit_status, order_status, design_notes, material_type_id) values
+  ('22222222-0000-0000-0000-000000000001', 'ORD-DEMO0001', 'Ahmad Razif', 'ahmad@example.com', '+601112345678', 'from_scratch', 'jersey', 'Navy Blue', 'deliver', '12 Jalan Bukit Bintang, KL 55100', '2025-08-15', 22, 'paid', 'in_production', 'Football jerseys for our company team, need number 1-22, logo on chest', '11111111-0000-0000-0000-000000000001'),
+  ('22222222-0000-0000-0000-000000000002', 'ORD-DEMO0002', 'Siti Nabilah', 'siti@example.com', '+601187654321', 'slight_modification', 'tshirt', 'White', 'self_collect', null, '2025-07-30', 50, 'unpaid', 'pending', 'Volunteer event t-shirts, our logo provided, just need resizing and colour change to white', '11111111-0000-0000-0000-000000000002'),
+  ('22222222-0000-0000-0000-000000000003', 'ORD-DEMO0003', 'Chen Wei Liang', 'wei@example.com', '+60197778888', 'redesign_mine', 'polo', 'Black', 'deliver', '88 Jalan Ampang, KL 50450', '2025-09-01', 10, 'paid', 'ready', 'Corporate polo shirts, existing logo needs a modern redesign', '11111111-0000-0000-0000-000000000003'),
+  ('22222222-0000-0000-0000-000000000004', 'ORD-DEMO0004', 'Priya Ramasamy', 'priya@example.com', '+60163334444', 'use_mine', 'tshirt', 'Red', 'self_collect', null, '2025-08-05', 30, 'paid', 'delivered', 'Family reunion shirts, design ready, just print as-is', '11111111-0000-0000-0000-000000000004')
+on conflict (reference_code) do nothing;
 
-insert into orders (id, customer_name, customer_email, design_service, design_notes, material_id, shirt_colour, print_zone, delivery_date, delivery_type, delivery_address, status, quoted_price, deposit_paid, balance_paid, is_urgent) values
-  ('b1000000-0000-0000-0000-000000000001', 'Priya Ramasamy', 'priya@example.com', 'slight_modification', 'Company logo on front, team name on back in bold white', 'a1000000-0000-0000-0000-000000000001', '#003087', 'both', current_date + 12, 'delivery', '45 Jalan Bukit Timah, Singapore 587789', 'in_production', 850.00, 255.00, 0, false),
-  ('b1000000-0000-0000-0000-000000000002', 'Marcus Tan', 'marcus.t@example.com', 'from_scratch', 'Football jersey for U16 team, red and black, player numbers 1-22', 'a1000000-0000-0000-0000-000000000001', '#CC0000', 'front', current_date + 5, 'collection', null, 'in_review', 1200.00, 360.00, 0, true),
-  ('b1000000-0000-0000-0000-000000000003', 'Siti Norzahra', 'siti.nz@example.com', 'use_as_is', 'Print exactly as uploaded — orientation as shown', 'a1000000-0000-0000-0000-000000000004', '#FFFFFF', 'front', current_date + 20, 'delivery', '12 Tampines Avenue 4, Singapore 529660', 'submitted', 420.00, 126.00, 0, false),
-  ('b1000000-0000-0000-0000-000000000004', 'David Lim', 'david.lim@example.com', 'redesign', 'Upgrade our old logo to something modern, keep the colour scheme', 'a1000000-0000-0000-0000-000000000002', '#2E8B57', 'both', current_date - 3, 'delivery', '8 Toa Payoh Lorong 1, Singapore 310008', 'ready', 560.00, 168.00, 392.00, false)
-on conflict (id) do nothing;
+insert into order_line_items (order_id, size, quantity, colour) values
+  ('22222222-0000-0000-0000-000000000001', 'S', 4, 'Navy Blue'),
+  ('22222222-0000-0000-0000-000000000001', 'M', 8, 'Navy Blue'),
+  ('22222222-0000-0000-0000-000000000001', 'L', 6, 'Navy Blue'),
+  ('22222222-0000-0000-0000-000000000001', 'XL', 4, 'Navy Blue'),
+  ('22222222-0000-0000-0000-000000000002', 'M', 20, 'White'),
+  ('22222222-0000-0000-0000-000000000002', 'L', 20, 'White'),
+  ('22222222-0000-0000-0000-000000000002', 'XL', 10, 'White'),
+  ('22222222-0000-0000-0000-000000000003', 'M', 5, 'Black'),
+  ('22222222-0000-0000-0000-000000000003', 'L', 5, 'Black'),
+  ('22222222-0000-0000-0000-000000000004', 'S', 10, 'Red'),
+  ('22222222-0000-0000-0000-000000000004', 'M', 10, 'Red'),
+  ('22222222-0000-0000-0000-000000000004', 'L', 10, 'Red');
 
-insert into order_items (order_id, size, quantity) values
-  ('b1000000-0000-0000-0000-000000000001', 'S', 5),
-  ('b1000000-0000-0000-0000-000000000001', 'M', 15),
-  ('b1000000-0000-0000-0000-000000000001', 'L', 10),
-  ('b1000000-0000-0000-0000-000000000002', 'S', 4),
-  ('b1000000-0000-0000-0000-000000000002', 'M', 8),
-  ('b1000000-0000-0000-0000-000000000002', 'L', 8),
-  ('b1000000-0000-0000-0000-000000000002', 'XL', 2),
-  ('b1000000-0000-0000-0000-000000000003', 'M', 10),
-  ('b1000000-0000-0000-0000-000000000003', 'L', 10),
-  ('b1000000-0000-0000-0000-000000000004', 'S', 5),
-  ('b1000000-0000-0000-0000-000000000004', 'M', 10),
-  ('b1000000-0000-0000-0000-000000000004', 'L', 5)
-on conflict do nothing;
-
-insert into payments (order_id, amount, payment_type, stripe_payment_intent_id, status) values
-  ('b1000000-0000-0000-0000-000000000001', 255.00, 'deposit', 'pi_demo_001', 'succeeded'),
-  ('b1000000-0000-0000-0000-000000000002', 360.00, 'deposit', 'pi_demo_002', 'succeeded'),
-  ('b1000000-0000-0000-0000-000000000003', 126.00, 'deposit', 'pi_demo_003', 'succeeded'),
-  ('b1000000-0000-0000-0000-000000000004', 168.00, 'deposit', 'pi_demo_004', 'succeeded'),
-  ('b1000000-0000-0000-0000-000000000004', 392.00, 'balance', 'pi_demo_005', 'succeeded')
-on conflict do nothing;
+insert into invoices (order_id, invoice_number, subtotal, deposit_paid, balance_due, payment_status, issued_at, paid_at) values
+  ('22222222-0000-0000-0000-000000000003', 'INV-DEMO0001', 550.00, 100.00, 450.00, 'paid', now() - interval '5 days', now() - interval '2 days'),
+  ('22222222-0000-0000-0000-000000000004', 'INV-DEMO0002', 900.00, 150.00, 750.00, 'paid', now() - interval '10 days', now() - interval '7 days')
+on conflict (invoice_number) do nothing;

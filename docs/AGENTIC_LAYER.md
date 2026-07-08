@@ -3,31 +3,34 @@
 ## Risk Levels & Actions
 
 ### Low — Auto (no approval needed)
-- Tag order as `urgent` when delivery_date < 7 days. *(tool: `tag_order`)*
-- Calculate completeness score and show inline warning to customer. *(tool: `score_completeness`)*
-- Parse design notes to pre-fill colour hex suggestion. *(tool: `parse_design_notes`)*
+- Generate `ai_summary` after order submitted (tag/summarise only)
+- Flag urgency and completeness score on new orders
+- Auto-generate `reference_code` and `invoice_number`
 
-### Medium — Light Approval (staff confirms)
-- Update order status (e.g. `in_review → in_production`). *(tool: `update_order_status`)*
-- Generate quoted price from complexity score. *(tool: `generate_quote`)*
+### Medium — Light staff approval before execution
+- Update `order_status` from pending → in_review (staff clicks confirm)
+- Send order-received acknowledgement email to customer
+- Mark deposit as waived (staff must tick confirm checkbox)
 
-### High — Always Approval (staff explicitly triggers)
-- Send balance invoice link to customer email. *(tool: `send_invoice_email`)*
-- Initiate Stripe invoice. *(tool: `create_stripe_invoice`)*
+### High — Staff approval required every time
+- Issue invoice and send payment link to customer email
+- Trigger Stripe payment session for final balance
+- Mark order as Delivered (irreversible in billing context)
 
-### Critical — Human Only
-- Issue refund to customer. *(human action via Stripe dashboard)*
-- Delete an order record. *(human action, no automated tool)*
-- Any legal/dispute escalation.
+### Critical — Human only, no agent
+- Issue refund via Stripe
+- Delete order record
+- Modify invoice amount after issued
 
-## Audit Log Fields
-`actor`, `action`, `object_type`, `object_id`, `payload (jsonb)`, `created_at`
+## Named Tools (approved list)
+- `create_stripe_checkout_session` — server-side API route only, never called from client
+- `send_transactional_email` — via Resend/SendGrid; only on approved trigger events
+- `update_order_status` — validates allowed transitions before writing
+- `generate_ai_summary` — calls OpenAI, stores result as unreviewed
 
-Every tool call writes one audit_log row before and after execution.
-
-## Named Tools Only
-No `run_any` or `send_any`. Each tool is a named Supabase Edge Function with a fixed input/output schema.
+## Audit Log Fields (activities table)
+- `entity_type`, `entity_id`, `action`, `actor`, `metadata` (before/after), `created_at`
 
 ## v1 vs Later
-**v1:** `tag_order`, `score_completeness`, `update_order_status` (manual button).
-**Later:** `parse_design_notes` (GPT-4o), `generate_quote` (AI), `send_invoice_email` (automated trigger).
+- **v1:** Low-risk auto actions only; all medium/high are manual staff clicks with DB writes logged.
+- **Later:** Automated email triggers on status change; AI summary auto-generation on submit.

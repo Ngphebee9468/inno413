@@ -1,20 +1,25 @@
 # Security — inno413
 
 ## Secret Handling
-- Stripe secret key and Supabase service-role key live ONLY in Vercel environment variables / Supabase Edge Function secrets.
-- Frontend receives only Stripe publishable key and Supabase anon key.
-- Design file uploads go directly to Supabase Storage via signed URLs — never through the Next.js server.
+- `STRIPE_SECRET_KEY`, `OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — server-side env vars only, never imported in any client component.
+- Stripe Checkout sessions created exclusively in Next.js API routes (`/api/stripe/*`).
+- Supabase anon key is safe for frontend; service role key is never exposed.
 
 ## Permission Model
-- **v1 (demo):** Permissive RLS policies — all rows readable/writable without login so the app is demoable.
-- **Lock-down sprint:** Customer rows scoped to `auth.uid() = user_id`; staff routes protected by a `role = 'staff'` check in Supabase `profiles` or a secret admin header.
-- `/admin/*` routes: middleware checks for a staff session before rendering — even in v1, the admin path requires an env-gated passphrase to avoid public exposure.
+- **v1 (demo):** RLS policies allow public read + write on all domain tables so the app is demoable without login.
+- **Lock-down sprint:** Replace all v1 policies with `auth.uid() = user_id`. Staff get elevated access via a `role` claim set in Supabase Auth metadata — never trusted from the client.
+- Customers can only read/write their own orders after lock-down.
+- Staff role checked server-side in API routes before any write that customers should not perform.
 
-## Approved-Tools Rule
-Agents may only call named Edge Functions (listed in AGENTIC_LAYER.md). No function may accept a raw SQL string from the client. All mutations validate input shape with Zod before touching the DB.
+## Approved Tools Rule
+- No `eval`, `exec`, or dynamic SQL construction.
+- Agent actions use the named tools list only (see AGENTIC_LAYER.md).
+- Every tool call that mutates data writes a row to `activities` before returning.
 
 ## Audit Principle
-Every meaningful mutation (status change, payment event, invoice send) writes to `audit_logs` with actor + payload. Logs are append-only (no delete policy on `audit_logs`). Stripe webhook events are stored raw in `payments` before processing.
+- Every status change, payment event, and invoice action is logged in `activities` with actor + timestamp + before/after metadata.
+- Logs are append-only (no update/delete policy on `activities` even for staff).
+- If a Stripe webhook fails to write to DB, the order remains in its previous state — no silent partial updates.
 
-## Payments
-Stripe Checkout handles all card data — inno413 never touches raw card numbers. Webhook signature verification is mandatory before any order status update.
+## Stop and Get Help
+- Refund logic, PCI scope questions, and data-deletion requests (PDPA/GDPR) require a human engineer review before any code ships.

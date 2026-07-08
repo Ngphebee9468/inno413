@@ -1,31 +1,35 @@
 # PRD — inno413 T-Shirt Order Platform
 
 ## Problem
-Customers struggle to communicate t-shirt specs clearly; staff waste time chasing missing details. Finalising designs takes too long because customers can't visualise the result upfront.
+Customers struggle to communicate custom t-shirt requirements clearly, and staff waste time chasing incomplete briefs, delayed designs, and unconfirmed payments.
 
 ## Target Users
-- **Customer** — individual or group buyer placing a t-shirt order.
-- **Staff** — inno413 team member reviewing, printing, and fulfilling orders.
+- **Customers** — individuals or teams ordering custom apparel.
+- **Company staff / admin** — inno413 team receiving, processing, and invoicing orders.
 
 ## Core Objects
-`orders`, `order_items` (per size/qty line), `design_requests`, `tshirt_materials`, `payments`, `users`
+- `material_types` — available fabrics (dry-fit, anti-bacterial, etc.)
+- `orders` — one order per customer request; holds all brief, design, delivery, and payment data
+- `order_line_items` — per-size quantities within an order
+- `invoices` — final billing record linked to an order
+- `activities` — audit trail of every status change and action
 
 ## MVP Must-Haves
-- [ ] Customer submits an order: design brief, design service type, per-size quantities, delivery date + address
-- [ ] Customer uploads a design file (or notes "design from scratch")
-- [ ] Customer selects t-shirt material from a predefined list
-- [ ] 3D rotating shirt preview that reflects chosen colour, design type, and print zone
-- [ ] Customer pays a deposit via Stripe at order submission
-- [ ] Staff dashboard: list all orders, view full details, update order status
-- [ ] Staff sends invoice; customer pays remaining balance via Stripe
-- [ ] Order status flow: `submitted → in_review → in_production → ready → delivered/collected`
+- [ ] Multi-step order form: design upload, design service choice, material picker, size/qty breakdown, delivery details
+- [ ] Real-time 3D rotating garment preview (colour, text, decal)
+- [ ] Stripe deposit checkout on order submit
+- [ ] Staff dashboard: view all orders, update status, add notes
+- [ ] Staff invoice creation + customer payment link for remaining balance
+- [ ] All data persists to Supabase; UI reflects DB truth on reload
 
 ## Non-Goals (v1)
-- Multi-store / multi-brand tenancy
-- Automated print-file generation
-- Live chat / messaging thread
-- Customer accounts (login wall) — auth comes in a later sprint
-- Mobile native app
+- Customer account login / order history portal
+- Inventory / stock management
+- Automated AI design generation
+- Multi-currency or tax calculation
 
 ## Success Criteria
-A customer visits the site, configures a 50-piece jersey order, previews it on the 3D model, submits with a 30% deposit payment, and a staff member sees the full order in the dashboard and advances its status — all in one session without a support call.
+A customer visits the site, completes the 5-step order form with a design file, selects Dry-Fit Navy Blue jersey with size breakdown, pays a deposit via Stripe, and receives a reference number. Staff open the dashboard, see the order, update status to In Production, then issue an invoice. Customer pays the balance via the payment link. Staff marks the order Delivered. Every step is reflected in the database with no manual workaround needed.
+
+## Definition of Done
+The above scenario runs end-to-end on the live Vercel deployment against the real Supabase database, with no dead buttons, no seed-data-only screens, and correct DB writes confirmed after every action.

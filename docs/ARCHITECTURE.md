@@ -1,28 +1,32 @@
 # Architecture — inno413
 
 ## Stack
-- **Frontend:** Next.js 14 (App Router) + Tailwind CSS + Three.js (3D preview)
-- **Backend/DB:** Supabase (Postgres + Storage + RLS)
-- **Payments:** Stripe (Checkout for deposit; invoices for balance)
-- **Hosting:** Vercel
+- **Frontend:** Next.js 14 (App Router) on Vercel
+- **Backend/DB:** Supabase (Postgres + Storage + Auth)
+- **Payments:** Stripe Checkout (server-side API routes only)
+- **3D Preview:** Three.js / React Three Fiber
 
-## Now vs Later
-**Now:** order submission form, 3D preview widget, material selector, file upload to Supabase Storage, deposit checkout, staff order dashboard, status updates.
-**Later:** customer login + order history, AI design suggestion, automated invoice generation, delivery tracking integration.
+## Build Sequence
+**Now:** Domain tables → order form CRUD → 3D preview → Stripe deposit → staff dashboard → invoice + final payment
+**Next:** Customer auth + order history, email notifications, PDF invoices
+**Later:** AI design suggestions, inventory, analytics
 
-## Key User Action — Step by Step
-1. Customer opens homepage → sees live demo orders (seed data) and "Start Order" CTA.
-2. Fills multi-step form: material → design service → colours/sizes → upload → delivery details.
-3. 3D preview renders in real-time as options are selected (Three.js shirt mesh + texture overlay).
-4. Customer clicks "Submit & Pay Deposit" → Stripe Checkout opens for 30% of quoted price.
-5. On payment success, Supabase row `orders.status` set to `submitted`; confirmation email sent.
-6. Staff opens `/admin` → views order list → opens detail → updates status at each stage.
-7. Staff marks order `ready` → triggers balance invoice link sent to customer email.
-8. Customer pays balance via Stripe; order marked `delivered` or `collected`.
+## Key User Action — Order Submission Flow
+1. Customer opens homepage (demo orders visible, no login required).
+2. Clicks "New Order" → multi-step form.
+3. Uploads design file → stored in Supabase Storage; URL saved to `orders.design_file_url`.
+4. Selects material, garment type, colours, adds text/number → previews on 3D model in real time.
+5. Enters size breakdown → written to `order_line_items`.
+6. Enters delivery address and deadline → saved to `orders`.
+7. Submits → Next.js API route creates Stripe Checkout session for deposit.
+8. Stripe redirects back → webhook updates `orders.deposit_status = 'paid'` and logs to `activities`.
+9. Staff dashboard auto-reflects new order.
+10. Staff updates status, creates invoice → customer pays balance via second Stripe session.
 
 ## Layer Plan
-1. **Data layer first** — tables, constraints, RLS, seed data.
-2. **App logic** — form → DB → status machine → Stripe webhooks.
-3. **Smart features later** — AI design scoring, auto-quote engine.
+1. **Data layer first** — tables, constraints, RLS (open for demo, locked per-user later).
+2. **App logic** — form, storage, status machine, Stripe integration.
+3. **Smart features** — AI order summary, auto-tagging urgency (layered on top; core works without them).
 
-The platform works fully without any AI: every status, payment, and order detail is driven by form inputs, database rows, and Stripe events.
+## Core Without AI
+All order capture, status updates, invoicing, and payments work via plain CRUD + Stripe. AI fields are optional overlays that can be switched off.

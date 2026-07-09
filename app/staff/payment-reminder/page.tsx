@@ -2,31 +2,45 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { depositLabels, formatMoney, statusLabels } from "@/lib/orders";
 import { hasStaffAccess } from "@/lib/staff-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Order } from "@/lib/types";
 import { PaymentReminderActions } from "./PaymentReminderActions";
 
 export const dynamic = "force-dynamic";
 
-async function getOrder(id?: string) {
-  if (!id || !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
+async function getOrder(id?: string, invoiceId?: string) {
+  if (!id && !invoiceId) return null;
+  const supabase = createAdminClient();
+  let orderId = id;
+
+  if (!orderId && invoiceId) {
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("invoices")
+      .select("order_id")
+      .eq("id", invoiceId)
+      .maybeSingle();
+    if (invoiceError) console.error("[staff:payment-reminder:invoice]", invoiceError);
+    orderId = invoice?.order_id;
+  }
+
+  if (!orderId) return null;
+  const { data, error } = await supabase
     .from("orders")
     .select("*, material_types(*), order_line_items(*), invoices(*)")
-    .eq("id", id)
-    .single();
+    .eq("id", orderId)
+    .maybeSingle();
+  if (error) console.error("[staff:payment-reminder:order]", error);
   return data as Order | null;
 }
 
 export default async function PaymentReminderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string }>;
+  searchParams: Promise<{ invoice?: string; order?: string }>;
 }) {
   if (!(await hasStaffAccess())) redirect("/staff/login");
-  const { order: orderId } = await searchParams;
-  const order = await getOrder(orderId);
+  const { invoice: invoiceId, order: orderId } = await searchParams;
+  const order = await getOrder(orderId, invoiceId);
   if (!order) notFound();
   const invoice = order.invoices?.[0];
 

@@ -118,7 +118,7 @@ export default async function StaffOrderPage({ params }: { params: Promise<{ id:
           {order.invoices?.length ? (
             <table className="table">
               <thead><tr><th>Invoice</th><th>Total</th><th>Deposit</th><th>Balance</th><th>Status</th></tr></thead>
-              <tbody>{order.invoices.map((invoice) => <tr key={invoice.id}><td>{invoice.invoice_number}</td><td>{formatMoney(invoice.subtotal)}</td><td>{formatMoney(invoice.deposit_paid)}</td><td>{formatMoney(invoice.balance_due)}</td><td><span className={`badge ${invoice.payment_status}`}>{invoice.payment_status}</span></td></tr>)}</tbody>
+              <tbody>{order.invoices.map((invoice) => <tr key={invoice.id}><td><Link href={`/staff/invoices/${invoice.id}`}>{invoice.invoice_number}</Link></td><td>{formatMoney(invoice.subtotal)}</td><td>{formatMoney(invoice.deposit_paid)}</td><td>{formatMoney(invoice.balance_due)}</td><td><Link className={`badge ${invoice.payment_status}`} href={`/staff/invoices/${invoice.id}`}>{invoice.payment_status}</Link></td></tr>)}</tbody>
             </table>
           ) : <p className="muted">No invoices yet.</p>}
         </section>

@@ -146,11 +146,11 @@ textarea {
 }
 
 .teamwear-hero {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 16 / 10;
   border: 1px solid rgba(15, 118, 110, .16);
   border-radius: 8px;
   box-shadow: 0 28px 80px rgba(20, 68, 55, .18);
-  min-height: 430px;
+  min-height: 390px;
   overflow: hidden;
   position: relative;
 }
@@ -159,7 +159,7 @@ textarea {
   display: block;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: center center;
   width: 100%;
 }
 
@@ -497,7 +497,8 @@ textarea {
   }
 
   .teamwear-hero {
-    min-height: 330px;
+    aspect-ratio: 4 / 3;
+    min-height: 300px;
   }
 
   .page-header,

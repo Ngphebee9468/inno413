@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { computeDeposit } from "@/lib/orders";
+import { computeDeposit, computeOrderTotal, formatMoney, garmentPricing, getUnitPrice } from "@/lib/orders";
 import type { LineItem, MaterialType } from "@/lib/types";
 import { GarmentPreview } from "./GarmentPreview";
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 const steps = ["Design", "Material", "Sizes", "Delivery", "Review"];
+const whatsappUrl =
+  process.env.NEXT_PUBLIC_WHATSAPP_URL ??
+  "https://wa.me/?text=Hi%20inno413%2C%20I%20would%20like%20to%20customise%20a%20t-shirt%20outside%20the%20catalogue.";
 const fontChoices = [
   "Aptos",
   "Arial",
@@ -66,7 +69,9 @@ export function OrderForm({ materials }: Props) {
     () => lineItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
     [lineItems],
   );
-  const deposit = computeDeposit(totalQuantity);
+  const unitPrice = getUnitPrice(form.garment_type, totalQuantity);
+  const orderTotal = computeOrderTotal(form.garment_type, totalQuantity);
+  const deposit = computeDeposit(orderTotal);
 
   function update(name: string, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -146,8 +151,11 @@ export function OrderForm({ materials }: Props) {
             fontFamily: form.font_family,
             fontSize: Number(form.font_size),
             garmentType: form.garment_type,
+            orderTotal,
+            deposit,
             text: form.custom_text,
             teamName: form.team_name,
+            unitPrice,
             decalUrl,
           },
           line_items: lineItems.filter((item) => Number(item.quantity) > 0),
@@ -216,6 +224,7 @@ export function OrderForm({ materials }: Props) {
               <div className="field"><label>Email</label><input type="email" value={form.customer_email} onChange={(e) => update("customer_email", e.target.value)} /></div>
               <div className="field"><label>Phone</label><input value={form.customer_phone} onChange={(e) => update("customer_phone", e.target.value)} /></div>
               <div className="field"><label>Design Service</label><select value={form.design_service} onChange={(e) => update("design_service", e.target.value)}><option value="use_mine">Use my design</option><option value="redesign_mine">Redesign mine</option><option value="from_scratch">Design from scratch</option><option value="slight_modification">Slight modification</option></select></div>
+              <div className="field"><label>Custom T-shirt</label><a className="ghost-button" href={whatsappUrl} rel="noreferrer" target="_blank">Chat on WhatsApp</a></div>
               <div className="field"><label>Upload Design</label><input accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" type="file" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} /></div>
               <div className="field"><label>Number / Text</label><input value={form.custom_text} onChange={(e) => update("custom_text", e.target.value)} /></div>
               <div className="field"><label>Team Name (Optional)</label><input value={form.team_name} onChange={(e) => update("team_name", e.target.value)} /></div>
@@ -228,9 +237,10 @@ export function OrderForm({ materials }: Props) {
 
           {step === 1 ? (
             <div className="form-grid">
-              <div className="field"><label>Garment</label><select value={form.garment_type} onChange={(e) => update("garment_type", e.target.value)}><option value="jersey">Jersey</option><option value="tshirt">T-shirt</option><option value="polo">Polo</option><option value="hoodie">Hoodie</option></select></div>
+              <div className="field full"><label>Garment</label><select value={form.garment_type} onChange={(e) => update("garment_type", e.target.value)}>{Object.entries(garmentPricing).map(([value, pricing]) => <option key={value} value={value}>{pricing.label} - {formatMoney(pricing.tiers.at(-1)?.unitPrice)} / {formatMoney(pricing.tiers[1].unitPrice)} for 10-30 pcs / {formatMoney(pricing.tiers[0].unitPrice)} above 30 pcs</option>)}</select></div>
               <div className="field"><label>Colour</label><input type="color" value={form.base_colour} onChange={(e) => update("base_colour", e.target.value)} /></div>
               <div className="field full"><label>Material</label><select value={form.material_type_id} onChange={(e) => update("material_type_id", e.target.value)}>{materials.map((material) => <option key={material.id} value={material.id}>{material.name} - {material.description}</option>)}</select></div>
+              <div className="field full"><label>Estimated Price</label><input readOnly value={`${formatMoney(unitPrice)} each x ${totalQuantity || 0} pieces = ${formatMoney(orderTotal)}; deposit ${formatMoney(deposit)} (10%)`} /></div>
             </div>
           ) : null}
 
@@ -241,6 +251,7 @@ export function OrderForm({ materials }: Props) {
                 <tbody>{lineItems.map((item, index) => <tr key={item.size}><td>{item.size}</td><td><input min="0" type="number" value={item.quantity} onChange={(e) => updateLine(index, "quantity", e.target.value)} /></td><td><input type="color" value={item.colour ?? form.base_colour} onChange={(e) => updateLine(index, "colour", e.target.value)} /></td><td><input value={item.custom_text ?? ""} onChange={(e) => updateLine(index, "custom_text", e.target.value)} /></td></tr>)}</tbody>
               </table>
               <p className="muted">Total quantity: {totalQuantity}</p>
+              <p className="muted">Estimated order total: {formatMoney(orderTotal)}. Deposit due: {formatMoney(deposit)}.</p>
             </div>
           ) : null}
 
@@ -256,9 +267,10 @@ export function OrderForm({ materials }: Props) {
             <div className="meta-list">
               <p><span>Customer</span>{form.customer_name} / {form.customer_email}</p>
               <p><span>Material</span>{materials.find((material) => material.id === form.material_type_id)?.name}</p>
-              <p><span>Garment</span>{form.garment_type}, {totalQuantity} pieces</p>
+              <p><span>Garment</span>{garmentPricing[form.garment_type as keyof typeof garmentPricing]?.label ?? form.garment_type}, {totalQuantity} pieces at {formatMoney(unitPrice)} each</p>
               <p><span>Team / Font</span>{form.team_name || "No team name"} / {form.font_family} / {form.font_size}px</p>
-              <p><span>Deposit</span>SGD {deposit.toFixed(2)}</p>
+              <p><span>Estimated Total</span>{formatMoney(orderTotal)}</p>
+              <p><span>Deposit</span>{formatMoney(deposit)} (10%)</p>
               <p><span>Design upload</span>{decalUrl ? "Attached" : "No file attached"}</p>
             </div>
           ) : null}

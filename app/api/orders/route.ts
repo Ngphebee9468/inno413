@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { computeDeposit } from "@/lib/orders";
+import { computeDeposit, computeOrderTotal, getUnitPrice } from "@/lib/orders";
 import type { OrderPayload } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -14,7 +14,9 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient();
-    const depositAmount = computeDeposit(totalQuantity);
+    const unitPrice = getUnitPrice(body.garment_type, totalQuantity);
+    const orderTotal = computeOrderTotal(body.garment_type, totalQuantity);
+    const depositAmount = computeDeposit(orderTotal);
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -57,7 +59,12 @@ export async function POST(request: Request) {
       entity_id: order.id,
       action: "order_submitted",
       actor: "customer",
-      metadata: { total_quantity: totalQuantity, deposit_amount: depositAmount },
+      metadata: {
+        deposit_amount: depositAmount,
+        estimated_total: orderTotal,
+        total_quantity: totalQuantity,
+        unit_price: unitPrice,
+      },
     });
 
     return NextResponse.json(order);

@@ -32,8 +32,49 @@ export function formatMoney(value?: number | null) {
   }).format(Number(value ?? 0));
 }
 
-export function computeDeposit(totalQuantity: number) {
-  return Math.max(50, Math.min(250, totalQuantity * 5));
+export const garmentPricing = {
+  tshirt: {
+    label: "DRIFIT t-shirt (round-neck)",
+    tiers: [
+      { min: 31, unitPrice: 8.5 },
+      { min: 10, unitPrice: 9 },
+      { min: 1, unitPrice: 10 },
+    ],
+  },
+  polo: {
+    label: "POLO t-shirt",
+    tiers: [
+      { min: 31, unitPrice: 10.5 },
+      { min: 10, unitPrice: 11 },
+      { min: 1, unitPrice: 12 },
+    ],
+  },
+  jersey: {
+    label: "JERSEY print",
+    tiers: [
+      { min: 31, unitPrice: 12.5 },
+      { min: 10, unitPrice: 13.5 },
+      { min: 1, unitPrice: 15 },
+    ],
+  },
+} as const;
+
+export type PricedGarmentType = keyof typeof garmentPricing;
+
+export function getUnitPrice(garmentType: string, totalQuantity: number) {
+  const pricing = garmentPricing[(garmentType as PricedGarmentType) || "jersey"] ?? garmentPricing.jersey;
+  return pricing.tiers.find((tier) => totalQuantity >= tier.min)?.unitPrice ?? pricing.tiers.at(-1)?.unitPrice ?? 0;
+}
+
+export function computeOrderTotal(garmentType: string, totalQuantity: number) {
+  return Number((getUnitPrice(garmentType, totalQuantity) * totalQuantity).toFixed(2));
+}
+
+export function computeDeposit(totalOrQuantity: number, garmentType?: string) {
+  const orderTotal = garmentType
+    ? computeOrderTotal(garmentType, totalOrQuantity)
+    : totalOrQuantity;
+  return Number((orderTotal * 0.1).toFixed(2));
 }
 
 export const allowedTransitions: Record<string, string[]> = {

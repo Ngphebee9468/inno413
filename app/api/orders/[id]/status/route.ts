@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { allowedTransitions } from "@/lib/orders";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { status } = (await request.json()) as { status?: string };
     if (!status) return NextResponse.json({ error: "status is required." }, { status: 400 });
 
@@ -11,7 +12,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const { data: order, error } = await supabase
       .from("orders")
       .select("id, order_status")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
     if (error) throw error;
 
@@ -20,10 +21,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: "That status transition is not allowed." }, { status: 400 });
     }
 
-    await supabase.from("orders").update({ order_status: status }).eq("id", params.id);
+    await supabase.from("orders").update({ order_status: status }).eq("id", id);
     await supabase.from("activities").insert({
       entity_type: "orders",
-      entity_id: params.id,
+      entity_id: id,
       action: "status_changed",
       actor: "staff",
       metadata: { from: order.order_status, to: status },

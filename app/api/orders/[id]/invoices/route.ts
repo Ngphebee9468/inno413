@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { subtotal, deposit_paid, notes } = (await request.json()) as {
       subtotal?: number;
       deposit_paid?: number;
@@ -18,7 +19,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const { data: invoice, error } = await supabase
       .from("invoices")
       .insert({
-        order_id: params.id,
+        order_id: id,
         subtotal,
         deposit_paid: deposit_paid ?? 0,
         balance_due: balanceDue,
@@ -37,7 +38,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       entity_id: invoice.id,
       action: "invoice_created",
       actor: "staff",
-      metadata: { order_id: params.id, subtotal, balance_due: balanceDue },
+      metadata: { order_id: id, subtotal, balance_due: balanceDue },
     });
 
     return NextResponse.json(invoice);

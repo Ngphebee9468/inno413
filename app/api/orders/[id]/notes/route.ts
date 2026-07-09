@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { staff_notes } = (await request.json()) as { staff_notes?: string };
     const supabase = createAdminClient();
 
-    await supabase.from("orders").update({ staff_notes: staff_notes ?? "" }).eq("id", params.id);
+    await supabase.from("orders").update({ staff_notes: staff_notes ?? "" }).eq("id", id);
     await supabase.from("activities").insert({
       entity_type: "orders",
-      entity_id: params.id,
+      entity_id: id,
       action: "notes_updated",
       actor: "staff",
       metadata: { length: staff_notes?.length ?? 0 },

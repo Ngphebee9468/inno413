@@ -19,8 +19,9 @@ async function getOrder(id: string) {
   return data as Order | null;
 }
 
-export default async function StaffOrderPage({ params }: { params: { id: string } }) {
-  const order = await getOrder(params.id);
+export default async function StaffOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const order = await getOrder(id);
   if (!order) notFound();
   const urgency = getUrgency(order);
 

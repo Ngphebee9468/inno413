@@ -154,11 +154,13 @@ textarea {
 .fabric-card {
   align-items: center;
   background:
-    radial-gradient(circle at 24% 16%, rgba(255,255,255,.86), transparent 26%),
-    linear-gradient(145deg, rgba(255,255,255,.72), rgba(214,231,219,.72));
-  border: 1px solid rgba(18, 27, 23, .08);
+    radial-gradient(circle at 18% 16%, rgba(255,255,255,.95), transparent 25%),
+    radial-gradient(circle at 86% 10%, rgba(255,196,87,.4), transparent 26%),
+    radial-gradient(circle at 78% 86%, rgba(14,165,164,.24), transparent 30%),
+    linear-gradient(145deg, rgba(255,255,255,.86), rgba(220,241,228,.78));
+  border: 1px solid rgba(15, 118, 110, .16);
   border-radius: 8px;
-  box-shadow: 0 24px 70px rgba(25, 42, 34, .12);
+  box-shadow: 0 26px 74px rgba(20, 68, 55, .18);
   display: flex;
   justify-content: center;
   position: absolute;
@@ -185,7 +187,7 @@ textarea {
 }
 
 .shirt-shirt::before {
-  background: rgba(255,255,255,.72);
+  background: rgba(255,255,255,.86);
   clip-path: polygon(42% 8%, 58% 8%, 54% 19%, 46% 19%);
   content: "";
   height: 100%;
@@ -195,17 +197,30 @@ textarea {
   width: 100%;
 }
 
+.shirt-shirt::after {
+  background:
+    linear-gradient(105deg, transparent 0 43%, rgba(255,255,255,.28) 43% 48%, transparent 48%),
+    linear-gradient(255deg, transparent 0 42%, rgba(255,196,87,.92) 42% 47%, transparent 47%);
+  content: "";
+  height: 100%;
+  left: 0;
+  mix-blend-mode: screen;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
 .shirt-navy {
   background:
-    linear-gradient(90deg, rgba(255,255,255,.07), transparent 28%, rgba(255,255,255,.08) 52%, transparent 70%),
-    #17365e;
+    linear-gradient(90deg, rgba(255,255,255,.12), transparent 28%, rgba(255,255,255,.16) 52%, transparent 70%),
+    linear-gradient(135deg, #0b2f8a 0%, #0068b7 45%, #00a6a6 100%);
   color: white;
 }
 
 .shirt-light {
   background:
     linear-gradient(90deg, rgba(18,27,23,.05), transparent 40%, rgba(18,27,23,.07) 62%, transparent),
-    #fbf7e8;
+    linear-gradient(145deg, #fff7df, #ffe1a6 42%, #f66f45 100%);
   color: var(--ink);
 }
 
@@ -248,21 +263,21 @@ textarea {
 .swatch-stack span {
   border: 3px solid white;
   border-radius: 999px;
-  box-shadow: 0 10px 24px rgba(18, 27, 23, .14);
+  box-shadow: 0 12px 28px rgba(18, 27, 23, .2);
   height: 30px;
   width: 30px;
 }
 
 .swatch-stack span:nth-child(1) {
-  background: var(--clay);
+  background: #f04e37;
 }
 
 .swatch-stack span:nth-child(2) {
-  background: var(--sun);
+  background: #ffc83d;
 }
 
 .swatch-stack span:nth-child(3) {
-  background: var(--teal);
+  background: #00a6a6;
 }
 
 .page-header {

@@ -5,6 +5,7 @@ import { hasStaffAccess } from "@/lib/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Order } from "@/lib/types";
 import { PaymentReminderActions } from "./PaymentReminderActions";
+import { StaffLogoutButton } from "../StaffLogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function PaymentReminderPage({
     <main className="app-shell">
       <header className="topbar">
         <Link className="brand" href="/"><span className="brand-mark">i</span><span>inno413</span></Link>
-        <nav className="nav"><Link className="ghost-button" href="/staff">Staff</Link><Link className="button" href="/orders/new">New Order</Link></nav>
+        <nav className="nav"><Link className="ghost-button" href="/staff">Staff</Link><Link className="button" href="/orders/new">New Order</Link><StaffLogoutButton /></nav>
       </header>
       <section className="page">
         <div className="page-header">

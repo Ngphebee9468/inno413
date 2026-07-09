@@ -22,14 +22,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (error || !data) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
     const order = data as SecureOrder;
-    if (!order.access_password_hash) {
+    const previewConfig = order.preview_config ?? {};
+    const previewAccessHash =
+      typeof previewConfig.__order_access_hash === "string" ? previewConfig.__order_access_hash : null;
+    const expectedHash = order.access_password_hash ?? previewAccessHash;
+
+    if (!expectedHash) {
       return NextResponse.json({ error: "This order does not have customer password access yet. Please contact staff." }, { status: 403 });
     }
-    if (!matchesOrderIdentity(order, identity) || order.access_password_hash !== hashOrderPassword(password)) {
+    if (!matchesOrderIdentity(order, identity) || expectedHash !== hashOrderPassword(password)) {
       return NextResponse.json({ error: "The details entered do not match this order." }, { status: 403 });
     }
 
     const { access_password_hash: _hidden, ...safeOrder } = order;
+    if (safeOrder.preview_config) delete safeOrder.preview_config.__order_access_hash;
     return NextResponse.json({ order: safeOrder });
   } catch (err) {
     console.error("[orders:verify]", err);

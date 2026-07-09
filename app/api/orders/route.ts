@@ -21,30 +21,47 @@ export async function POST(request: Request) {
     const unitPrice = getUnitPrice(body.garment_type, totalQuantity);
     const orderTotal = computeOrderTotal(body.garment_type, totalQuantity);
     const depositAmount = computeDeposit(orderTotal);
-    const { data: order, error: orderError } = await supabase
+    const accessPasswordHash = hashOrderPassword(body.access_password);
+    const previewConfig = {
+      ...body.preview_config,
+      __order_access_hash: accessPasswordHash,
+    };
+    const orderInsert = {
+      customer_name: body.customer_name,
+      customer_email: body.customer_email,
+      customer_phone: body.customer_phone ?? null,
+      access_password_hash: accessPasswordHash,
+      design_service: body.design_service,
+      design_file_url: body.design_file_url ?? null,
+      design_notes: body.design_notes ?? null,
+      material_type_id: body.material_type_id,
+      garment_type: body.garment_type,
+      base_colour: body.base_colour,
+      preview_config: previewConfig,
+      delivery_address: body.delivery_address ?? null,
+      delivery_method: body.delivery_method,
+      needed_by: body.needed_by,
+      total_quantity: totalQuantity,
+      deposit_amount: depositAmount,
+      deposit_status: "unpaid",
+      order_status: "pending",
+    };
+    let orderResponse = await supabase
       .from("orders")
-      .insert({
-        customer_name: body.customer_name,
-        customer_email: body.customer_email,
-        customer_phone: body.customer_phone ?? null,
-        access_password_hash: hashOrderPassword(body.access_password),
-        design_service: body.design_service,
-        design_file_url: body.design_file_url ?? null,
-        design_notes: body.design_notes ?? null,
-        material_type_id: body.material_type_id,
-        garment_type: body.garment_type,
-        base_colour: body.base_colour,
-        preview_config: body.preview_config,
-        delivery_address: body.delivery_address ?? null,
-        delivery_method: body.delivery_method,
-        needed_by: body.needed_by,
-        total_quantity: totalQuantity,
-        deposit_amount: depositAmount,
-        deposit_status: "unpaid",
-        order_status: "pending",
-      })
+      .insert(orderInsert)
       .select("id, reference_code")
       .single();
+
+    if (orderResponse.error && orderResponse.error.message.includes("access_password_hash")) {
+      const { access_password_hash: _unused, ...legacyOrderInsert } = orderInsert;
+      orderResponse = await supabase
+        .from("orders")
+        .insert(legacyOrderInsert)
+        .select("id, reference_code")
+        .single();
+    }
+
+    const { data: order, error: orderError } = orderResponse;
 
     if (orderError) throw orderError;
 

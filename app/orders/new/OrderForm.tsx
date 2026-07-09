@@ -41,6 +41,7 @@ export function OrderForm({ materials }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
+  const [orderId, setOrderId] = useState("");
   const [paymentUrl, setPaymentUrl] = useState("");
   const [decalUrl, setDecalUrl] = useState("");
   const [customFontUrl, setCustomFontUrl] = useState("");
@@ -133,6 +134,31 @@ export function OrderForm({ materials }: Props) {
     return "";
   }
 
+  async function openDepositCheckout(id: string) {
+    const checkout = await fetch("/api/stripe/deposit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orderId: id }),
+    });
+    const checkoutPayload = await checkout.json();
+    if (!checkout.ok) throw new Error(checkoutPayload.error ?? "Deposit checkout could not start.");
+    setPaymentUrl(checkoutPayload.url);
+    if (checkoutPayload.url) window.location.href = checkoutPayload.url;
+  }
+
+  async function retryDepositCheckout() {
+    setBusy(true);
+    setError("");
+    try {
+      if (!orderId) throw new Error("Order ID is missing. Please create the order again.");
+      await openDepositCheckout(orderId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Deposit checkout could not start.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit() {
     const validationError = validate();
     if (validationError) {
@@ -168,16 +194,8 @@ export function OrderForm({ materials }: Props) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Order could not be created.");
       setReference(payload.reference_code);
-
-      const checkout = await fetch("/api/stripe/deposit", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orderId: payload.id }),
-      });
-      const checkoutPayload = await checkout.json();
-      if (!checkout.ok) throw new Error(checkoutPayload.error ?? "Deposit checkout could not start.");
-      setPaymentUrl(checkoutPayload.url);
-      if (checkoutPayload.url) window.location.href = checkoutPayload.url;
+      setOrderId(payload.id);
+      await openDepositCheckout(payload.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -190,8 +208,10 @@ export function OrderForm({ materials }: Props) {
       <div className="card">
         <p className="eyebrow">Order saved</p>
         <h2>{reference}</h2>
+        {error ? <p className="error-state">{error}</p> : null}
         <p className="muted">Your order is in Supabase. Continue to the payment link for the deposit.</p>
         {paymentUrl ? <a className="button" href={paymentUrl}>Open Deposit Checkout</a> : null}
+        {!paymentUrl ? <button className="button" disabled={busy} onClick={retryDepositCheckout} type="button">{busy ? "Opening..." : "Try Deposit Checkout Again"}</button> : null}
         <a className="ghost-button" href="/">Back to order board</a>
       </div>
     );

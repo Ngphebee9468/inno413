@@ -107,8 +107,10 @@ textarea {
 }
 
 .hero h1 {
+  font-family: "Trebuchet MS", "Arial Black", Arial, Helvetica, sans-serif;
   font-size: clamp(44px, 7vw, 84px);
-  line-height: .93;
+  font-weight: 900;
+  line-height: .96;
   max-width: 760px;
 }
 

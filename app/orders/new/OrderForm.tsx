@@ -43,8 +43,10 @@ export function OrderForm({ materials }: Props) {
   const [reference, setReference] = useState("");
   const [orderId, setOrderId] = useState("");
   const [paymentUrl, setPaymentUrl] = useState("");
-  const [decalUrl, setDecalUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [otherDesignUrl, setOtherDesignUrl] = useState("");
   const [customFontUrl, setCustomFontUrl] = useState("");
+  const [logoPlacement, setLogoPlacement] = useState({ x: 332, y: 245, size: 118 });
   const [form, setForm] = useState({
     customer_name: "",
     customer_email: "",
@@ -56,7 +58,7 @@ export function OrderForm({ materials }: Props) {
     material_type_id: materials[0]?.id ?? "",
     garment_type: "jersey",
     base_colour: "#18365f",
-    custom_text: "10",
+    custom_text: "",
     font_family: "Bahnschrift",
     font_size: "150",
     team_name: "",
@@ -110,9 +112,14 @@ export function OrderForm({ materials }: Props) {
     return data.publicUrl;
   }
 
-  async function uploadFile(file: File) {
+  async function uploadLogoFile(file: File) {
+    const publicUrl = await uploadStorageFile(file, "logos");
+    if (publicUrl) setLogoUrl(publicUrl);
+  }
+
+  async function uploadOtherDesignFile(file: File) {
     const publicUrl = await uploadStorageFile(file, "orders");
-    if (publicUrl) setDecalUrl(publicUrl);
+    if (publicUrl) setOtherDesignUrl(publicUrl);
   }
 
   async function uploadFontFile(file: File) {
@@ -174,19 +181,21 @@ export function OrderForm({ materials }: Props) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           ...form,
-          design_file_url: decalUrl,
+          design_file_url: otherDesignUrl,
           preview_config: {
             colour: form.base_colour,
             customFontUrl,
             fontFamily: form.font_family,
             fontSize: Number(form.font_size),
             garmentType: form.garment_type,
+            logoPlacement,
+            logoUrl,
             orderTotal,
+            otherDesignUrl,
             deposit,
             text: form.custom_text,
             teamName: form.team_name,
             unitPrice,
-            decalUrl,
           },
           line_items: lineItems.filter((item) => Number(item.quantity) > 0),
         }),
@@ -222,11 +231,13 @@ export function OrderForm({ materials }: Props) {
       <GarmentPreview
         colour={form.base_colour}
         customFontUrl={customFontUrl}
-        decalUrl={decalUrl}
         fontFamily={form.font_family}
         fontSize={Number(form.font_size)}
         garmentType={form.garment_type}
+        logoPlacement={logoPlacement}
+        logoUrl={logoUrl}
         numberText={form.custom_text}
+        otherDesignUrl={otherDesignUrl}
         teamName={form.team_name}
       />
 
@@ -251,13 +262,18 @@ export function OrderForm({ materials }: Props) {
               <div className="field"><label>Confirm Password</label><input type="password" value={form.confirm_access_password} onChange={(e) => update("confirm_access_password", e.target.value)} /></div>
               <div className="field"><label>Design Service</label><select value={form.design_service} onChange={(e) => update("design_service", e.target.value)}><option value="use_mine">Use my design</option><option value="redesign_mine">Redesign mine</option><option value="from_scratch">Design from scratch</option><option value="slight_modification">Slight modification</option></select></div>
               <div className="field"><label>Custom T-shirt</label><a className="ghost-button" href={whatsappUrl} rel="noreferrer" target="_blank">Chat on WhatsApp</a></div>
-              <div className="field"><label>Upload Design</label><input accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" type="file" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} /></div>
-              <div className="field"><label>Number / Text</label><input value={form.custom_text} onChange={(e) => update("custom_text", e.target.value)} /></div>
+              <div className="field"><label>Logo Design (Optional)</label><input accept="image/png,image/jpeg,image/webp,image/svg+xml" type="file" onChange={(e) => e.target.files?.[0] && uploadLogoFile(e.target.files[0])} /></div>
+              <div className="field"><label>Other Design (Optional)</label><input accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" type="file" onChange={(e) => e.target.files?.[0] && uploadOtherDesignFile(e.target.files[0])} /></div>
+              <div className="field"><label>Number / Text (Optional)</label><input placeholder="Leave blank if not needed" value={form.custom_text} onChange={(e) => update("custom_text", e.target.value)} /></div>
               <div className="field"><label>Team Name (Optional)</label><input value={form.team_name} onChange={(e) => update("team_name", e.target.value)} /></div>
               <div className="field"><label>Font</label><select value={form.font_family} onChange={(e) => update("font_family", e.target.value)}>{fontChoices.map((font) => <option key={font} value={font}>{font}</option>)}{customFontUrl ? <option value="Uploaded Jersey Font">Uploaded Jersey Font</option> : null}</select></div>
-              <div className="field"><label>Font Size</label><input max="240" min="64" type="range" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /><input max="240" min="64" type="number" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /></div>
+              <div className="field"><label>Number / Text Size</label><input max="240" min="64" type="range" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /><input max="240" min="64" type="number" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /></div>
               <div className="field"><label>Upload Font</label><input accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" type="file" onChange={(e) => e.target.files?.[0] && uploadFontFile(e.target.files[0])} /></div>
+              <div className="field"><label>Logo Left / Right</label><input max="520" min="120" type="range" value={logoPlacement.x} onChange={(e) => setLogoPlacement((current) => ({ ...current, x: Number(e.target.value) }))} /></div>
+              <div className="field"><label>Logo Up / Down</label><input max="430" min="160" type="range" value={logoPlacement.y} onChange={(e) => setLogoPlacement((current) => ({ ...current, y: Number(e.target.value) }))} /></div>
+              <div className="field"><label>Logo Size</label><input max="260" min="70" type="range" value={logoPlacement.size} onChange={(e) => setLogoPlacement((current) => ({ ...current, size: Number(e.target.value) }))} /></div>
               <div className="field full"><label>Design Notes</label><textarea value={form.design_notes} onChange={(e) => update("design_notes", e.target.value)} /></div>
+              <p className="muted full">Drag the 3D shirt to rotate it 360 degrees. The logo controls move and resize the left-chest logo preview.</p>
               <p className="muted full">Please remember this password. You will need it, together with your email or mobile number, to access your order details and invoice after submission.</p>
             </div>
           ) : null}
@@ -298,7 +314,8 @@ export function OrderForm({ materials }: Props) {
               <p><span>Team / Font</span>{form.team_name || "No team name"} / {form.font_family} / {form.font_size}px</p>
               <p><span>Estimated Total</span>{formatMoney(orderTotal)}</p>
               <p><span>Deposit</span>{formatMoney(deposit)} (10%)</p>
-              <p><span>Design upload</span>{decalUrl ? "Attached" : "No file attached"}</p>
+              <p><span>Logo upload</span>{logoUrl ? "Attached" : "No logo attached"}</p>
+              <p><span>Other design upload</span>{otherDesignUrl ? "Attached" : "No other design attached"}</p>
             </div>
           ) : null}
 

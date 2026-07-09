@@ -8,10 +8,16 @@ type Props = {
   fontFamily: string;
   fontSize: number;
   garmentType: string;
+  logoPlacement: {
+    x: number;
+    y: number;
+    size: number;
+  };
+  logoUrl?: string;
   numberText: string;
   teamName: string;
   customFontUrl?: string;
-  decalUrl?: string;
+  otherDesignUrl?: string;
 };
 
 const trimMaterial = new THREE.MeshStandardMaterial({
@@ -53,17 +59,25 @@ function makeShapeGeometry(shape: THREE.Shape) {
 
 function createPanelTexture({
   colour,
-  decalUrl,
   fontFamily,
   fontSize,
+  logoPlacement,
+  logoUrl,
   numberText,
+  otherDesignUrl,
   teamName,
 }: {
   colour: string;
-  decalUrl?: string;
   fontFamily: string;
   fontSize: number;
+  logoPlacement: {
+    x: number;
+    y: number;
+    size: number;
+  };
+  logoUrl?: string;
   numberText: string;
+  otherDesignUrl?: string;
   teamName: string;
 }) {
   const canvas = document.createElement("canvas");
@@ -74,7 +88,7 @@ function createPanelTexture({
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
 
-  const draw = (image?: HTMLImageElement) => {
+  const draw = (logoImage?: HTMLImageElement, otherDesignImage?: HTMLImageElement) => {
     if (!ctx) return;
     const base = new THREE.Color(colour || "#18365f");
     const shade = `rgb(${Math.max(0, base.r * 255 - 28)}, ${Math.max(0, base.g * 255 - 28)}, ${Math.max(0, base.b * 255 - 28)})`;
@@ -102,18 +116,30 @@ function createPanelTexture({
     }
     ctx.globalAlpha = 1;
 
-    if (image) {
+    if (otherDesignImage) {
       ctx.save();
-      ctx.globalAlpha = 0.94;
-      ctx.shadowColor = "rgba(0,0,0,.2)";
-      ctx.shadowBlur = 16;
-      ctx.drawImage(image, 352, 180, 320, 205);
+      ctx.globalAlpha = 0.18;
+      ctx.shadowColor = "rgba(0,0,0,.16)";
+      ctx.shadowBlur = 10;
+      ctx.drawImage(otherDesignImage, 362, 440, 300, 210);
+      ctx.restore();
+    }
+
+    if (logoImage) {
+      const size = Math.max(70, Math.min(260, logoPlacement.size));
+      const x = Math.max(120, Math.min(520, logoPlacement.x));
+      const y = Math.max(160, Math.min(430, logoPlacement.y));
+      ctx.save();
+      ctx.globalAlpha = 0.96;
+      ctx.shadowColor = "rgba(0,0,0,.22)";
+      ctx.shadowBlur = 12;
+      ctx.drawImage(logoImage, x, y, size, size);
       ctx.restore();
     }
 
     const family = fontFamily || "Arial";
     const team = teamName.trim().slice(0, 24).toUpperCase();
-    const number = (numberText || "10").trim().slice(0, 8);
+    const number = numberText.trim().slice(0, 8);
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -124,25 +150,53 @@ function createPanelTexture({
     if (team) {
       ctx.font = `800 ${Math.max(34, Math.round(fontSize * 0.42))}px "${family}", Arial, sans-serif`;
       ctx.lineWidth = 9;
-      ctx.strokeText(team, 512, image ? 458 : 330);
-      ctx.fillText(team, 512, image ? 458 : 330);
+      ctx.strokeText(team, 512, logoImage ? 480 : 350);
+      ctx.fillText(team, 512, logoImage ? 480 : 350);
     }
 
-    ctx.font = `900 ${Math.max(64, fontSize)}px "${family}", Arial Black, Arial, sans-serif`;
-    ctx.lineWidth = 14;
-    ctx.strokeText(number, 512, image ? 645 : 545);
-    ctx.fillText(number, 512, image ? 645 : 545);
+    if (number) {
+      ctx.font = `900 ${Math.max(64, fontSize)}px "${family}", Arial Black, Arial, sans-serif`;
+      ctx.lineWidth = 14;
+      ctx.strokeText(number, 512, logoImage ? 655 : 560);
+      ctx.fillText(number, 512, logoImage ? 655 : 560);
+    }
     texture.needsUpdate = true;
   };
 
-  if (decalUrl) {
+  if (!logoUrl && !otherDesignUrl) {
+    draw();
+    return texture;
+  }
+
+  let logoImage: HTMLImageElement | undefined;
+  let otherDesignImage: HTMLImageElement | undefined;
+  let pending = Number(Boolean(logoUrl)) + Number(Boolean(otherDesignUrl));
+
+  const finish = () => {
+    pending -= 1;
+    if (pending <= 0) draw(logoImage, otherDesignImage);
+  };
+
+  if (logoUrl) {
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.onload = () => draw(image);
-    image.onerror = () => draw();
-    image.src = decalUrl;
-  } else {
-    draw();
+    image.onload = () => {
+      logoImage = image;
+      finish();
+    };
+    image.onerror = finish;
+    image.src = logoUrl;
+  }
+
+  if (otherDesignUrl) {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      otherDesignImage = image;
+      finish();
+    };
+    image.onerror = finish;
+    image.src = otherDesignUrl;
   }
 
   return texture;
@@ -151,11 +205,13 @@ function createPanelTexture({
 export function GarmentPreview({
   colour,
   customFontUrl,
-  decalUrl,
   fontFamily,
   fontSize,
   garmentType,
+  logoPlacement,
+  logoUrl,
   numberText,
+  otherDesignUrl,
   teamName,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -217,10 +273,12 @@ export function GarmentPreview({
 
       const panelTexture = createPanelTexture({
         colour,
-        decalUrl,
         fontFamily: activeFontFamily,
         fontSize,
+        logoPlacement,
+        logoUrl,
         numberText,
+        otherDesignUrl,
         teamName,
       });
 
@@ -312,12 +370,43 @@ export function GarmentPreview({
       scene.add(floor);
 
       let frame = 0;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      const targetRotation = { x: -0.04, y: 0 };
       const clock = new THREE.Clock();
+
+      const pointerDown = (event: PointerEvent) => {
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        renderer.domElement.setPointerCapture(event.pointerId);
+      };
+      const pointerMove = (event: PointerEvent) => {
+        if (!dragging) return;
+        const dx = event.clientX - lastX;
+        const dy = event.clientY - lastY;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        targetRotation.y += dx * 0.012;
+        targetRotation.x = Math.max(-0.55, Math.min(0.55, targetRotation.x + dy * 0.006));
+      };
+      const pointerUp = (event: PointerEvent) => {
+        dragging = false;
+        renderer.domElement.releasePointerCapture(event.pointerId);
+      };
+      renderer.domElement.addEventListener("pointerdown", pointerDown);
+      renderer.domElement.addEventListener("pointermove", pointerMove);
+      renderer.domElement.addEventListener("pointerup", pointerUp);
+      renderer.domElement.addEventListener("pointercancel", pointerUp);
+
       const animate = () => {
         if (disposed) return;
         frame = requestAnimationFrame(animate);
         const t = clock.getElapsedTime();
-        group.rotation.y = Math.sin(t * 0.7) * 0.36;
+        if (!dragging) targetRotation.y += 0.006;
+        group.rotation.x += (targetRotation.x - group.rotation.x) * 0.12;
+        group.rotation.y += (targetRotation.y - group.rotation.y) * 0.12;
         group.position.y = Math.sin(t * 1.5) * 0.025;
         renderer.render(scene, camera);
       };
@@ -334,6 +423,10 @@ export function GarmentPreview({
       return () => {
         cancelAnimationFrame(frame);
         window.removeEventListener("resize", resize);
+        renderer.domElement.removeEventListener("pointerdown", pointerDown);
+        renderer.domElement.removeEventListener("pointermove", pointerMove);
+        renderer.domElement.removeEventListener("pointerup", pointerUp);
+        renderer.domElement.removeEventListener("pointercancel", pointerUp);
         group.traverse((object) => {
           if (object instanceof THREE.Mesh) object.geometry.dispose();
         });
@@ -354,7 +447,7 @@ export function GarmentPreview({
       disposed = true;
       cleanup?.();
     };
-  }, [colour, customFontUrl, decalUrl, fontFamily, fontSize, garmentType, numberText, teamName]);
+  }, [colour, customFontUrl, fontFamily, fontSize, garmentType, logoPlacement, logoUrl, numberText, otherDesignUrl, teamName]);
 
   return (
     <div className="preview-wrap">

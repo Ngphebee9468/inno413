@@ -52,23 +52,12 @@ export default async function Home() {
             <span>Event tees</span>
           </div>
         </div>
-        <div className="shirt-showcase" aria-hidden="true">
-          <div className="fabric-card fabric-card-primary">
-            <div className="shirt-shirt shirt-navy">
-              <span className="shirt-team">TEAM</span>
-              <span className="shirt-number">413</span>
-            </div>
-          </div>
-          <div className="fabric-card fabric-card-side">
-            <div className="shirt-shirt shirt-light">
-              <span className="shirt-team">DTF</span>
-              <span className="shirt-number">10</span>
-            </div>
-          </div>
-          <div className="swatch-stack">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div className="teamwear-hero" aria-label="People modelling custom team shirts">
+          <img alt="Group of people modelling custom polo shirts and jerseys" src="/teamwear-hero.png" />
+          <div className="teamwear-caption">
+            <span>Polos</span>
+            <span>Jerseys</span>
+            <span>Event tees</span>
           </div>
         </div>
       </section>

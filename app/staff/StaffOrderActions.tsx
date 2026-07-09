@@ -13,9 +13,18 @@ export function StaffOrderActions({ order }: { order: Order }) {
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [message, setMessage] = useState("");
   const [paymentLink, setPaymentLink] = useState("");
+  const [depositLink, setDepositLink] = useState("");
   const nextStatuses = useMemo(() => allowedTransitions[order.order_status] ?? [], [order.order_status]);
   const deposit = Number(order.deposit_amount ?? 0);
   const balance = Math.max(0, Number(subtotal || 0) - deposit);
+  const customerOrderUrl =
+    typeof window === "undefined" ? "" : `${window.location.origin}/orders/${order.id}`;
+  const cleanPhone = (order.customer_phone ?? "").replace(/[^\d]/g, "");
+  const depositReminderText = `Hi ${order.customer_name}, your inno413 order ${order.reference_code} is saved. Please pay the deposit here so we can begin work: ${depositLink || customerOrderUrl}`;
+  const whatsappLink = cleanPhone
+    ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(depositReminderText)}`
+    : `https://wa.me/?text=${encodeURIComponent(depositReminderText)}`;
+  const emailLink = `mailto:${order.customer_email}?subject=${encodeURIComponent(`Deposit payment for ${order.reference_code}`)}&body=${encodeURIComponent(depositReminderText)}`;
 
   async function mutate(url: string, body?: unknown, method = "PATCH") {
     setMessage("");
@@ -55,6 +64,23 @@ export function StaffOrderActions({ order }: { order: Order }) {
     }
   }
 
+  async function createDepositLink() {
+    try {
+      setMessage("");
+      const response = await fetch("/api/stripe/deposit", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Deposit link failed.");
+      setDepositLink(payload.url);
+      setMessage("Deposit link ready.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Deposit link failed.");
+    }
+  }
+
   async function createInvoice() {
     try {
       const invoice = (await mutate(
@@ -91,6 +117,25 @@ export function StaffOrderActions({ order }: { order: Order }) {
         {order.deposit_status !== "paid" ? (
           <button className="ghost-button" onClick={markDepositPaid} type="button">Mark Deposit Received</button>
         ) : null}
+      </section>
+
+      <section className="card">
+        <h2>Chase deposit</h2>
+        <p className="muted">Create a fresh Stripe deposit link, then send it by WhatsApp or email.</p>
+        <button className="button" disabled={order.deposit_status === "paid"} onClick={createDepositLink} type="button">Create Deposit Link</button>
+        {depositLink ? (
+          <>
+            <input readOnly value={depositLink} onFocus={(event) => event.currentTarget.select()} />
+            <div className="actions">
+              <a className="ghost-button" href={whatsappLink} rel="noreferrer" target="_blank">Send WhatsApp</a>
+              <a className="ghost-button" href={emailLink}>Send Email</a>
+            </div>
+          </>
+        ) : (
+          <div className="actions">
+            <a className="ghost-button" href={customerOrderUrl}>Open Customer Summary</a>
+          </div>
+        )}
       </section>
 
       <section className="card">

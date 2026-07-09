@@ -60,7 +60,7 @@ export default async function Home() {
             {orders.map((order) => {
               const urgency = getUrgency(order);
               return (
-                <Link className="card" href={`/staff/orders/${order.id}`} key={order.id}>
+                <Link className="card" href={`/orders/${order.id}`} key={order.id}>
                   <div className="card-row">
                     <strong>{order.reference_code}</strong>
                     <span className={`badge ${order.order_status}`}>{statusLabels[order.order_status]}</span>
@@ -76,7 +76,7 @@ export default async function Home() {
                   </div>
                   <div className="card-row">
                     <span className={`badge ${urgency.label.toLowerCase()}`}>{urgency.label} urgency</span>
-                    <span className="muted">{order.needed_by ?? "No deadline"}</span>
+                    <span className="muted">{order.deposit_status === "paid" ? "View order" : "View / pay deposit"}</span>
                   </div>
                 </Link>
               );

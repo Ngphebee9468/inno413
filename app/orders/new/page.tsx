@@ -25,12 +25,12 @@ export default async function NewOrderPage() {
         <nav className="nav"><Link className="ghost-button" href="/">Orders</Link><Link className="ghost-button" href="/staff">Staff</Link></nav>
       </header>
       <section className="page">
-        <div className="page-header">
+        <div className="page-header order-brief-header">
           <div>
             <p className="eyebrow">New order</p>
-            <h1>Build the jersey brief</h1>
+            <h1>Build your t-shirt brief</h1>
           </div>
-          <p className="muted">Upload artwork, preview the garment, add sizes, then pay the deposit.</p>
+          <p className="muted">From team jerseys to corporate round-neck tees, start with the design details and confirm your 10% deposit.</p>
         </div>
         {materials.length === 0 ? (
           <div className="error-state">

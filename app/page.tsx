@@ -37,11 +37,47 @@ export default async function Home() {
         </nav>
       </header>
 
-      <section className="page">
-        <div className="page-header">
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="eyebrow">Inno413 Enterprise</p>
+          <h1>Custom t-shirts for teams that want to look put together.</h1>
+          <p className="hero-text">Design your own, create from us. Upload your artwork, choose your garment, confirm sizes, and start with a 10% deposit.</p>
+          <div className="hero-actions">
+            <Link className="button" href="/orders/new">Start New Order</Link>
+            <Link className="ghost-button" href="#orders">Find My Order</Link>
+          </div>
+          <div className="service-strip" aria-label="Inno413 services">
+            <span>DTF printing</span>
+            <span>Corporate uniforms</span>
+            <span>Event tees</span>
+          </div>
+        </div>
+        <div className="shirt-showcase" aria-hidden="true">
+          <div className="fabric-card fabric-card-primary">
+            <div className="shirt-shirt shirt-navy">
+              <span className="shirt-team">TEAM</span>
+              <span className="shirt-number">413</span>
+            </div>
+          </div>
+          <div className="fabric-card fabric-card-side">
+            <div className="shirt-shirt shirt-light">
+              <span className="shirt-team">DTF</span>
+              <span className="shirt-number">10</span>
+            </div>
+          </div>
+          <div className="swatch-stack">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </section>
+
+      <section className="page" id="orders">
+        <div className="page-header board-header">
           <div>
-            <p className="eyebrow">Order board</p>
-            <h1>Custom apparel orders</h1>
+            <p className="eyebrow">Private order board</p>
+            <h2>Track your t-shirt order</h2>
           </div>
           <p className="muted">Public board shows only masked customer details. Open your own order with your email or mobile number and password.</p>
         </div>

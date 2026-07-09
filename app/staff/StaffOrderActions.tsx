@@ -121,7 +121,7 @@ export function StaffOrderActions({ order }: { order: Order }) {
 
       <section className="card">
         <h2>Chase deposit</h2>
-        <p className="muted">Create a fresh Stripe deposit link, then send it by WhatsApp or email.</p>
+        <p className="muted">Create a fresh Stripe deposit link, then send it by WhatsApp or email before starting production.</p>
         <button className="button" disabled={order.deposit_status === "paid"} onClick={createDepositLink} type="button">Create Deposit Link</button>
         {depositLink ? (
           <>

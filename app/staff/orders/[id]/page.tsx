@@ -2,21 +2,22 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { depositLabels, formatMoney, getUrgency, statusLabels } from "@/lib/orders";
 import { hasStaffAccess } from "@/lib/staff-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Order } from "@/lib/types";
+import { StaffDeliveryActions } from "../../StaffDeliveryActions";
 import { StaffOrderActions } from "../../StaffOrderActions";
 
 export const dynamic = "force-dynamic";
 
 async function getOrder(id: string) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
     .from("orders")
     .select("*, material_types(*), order_line_items(*), invoices(*), activities(*)")
     .eq("id", id)
-    .order("created_at", { referencedTable: "activities", ascending: false })
-    .single();
+    .maybeSingle();
+  if (error) console.error("[staff:order]", error);
   return data as Order | null;
 }
 
@@ -26,6 +27,15 @@ export default async function StaffOrderPage({ params }: { params: Promise<{ id:
   const order = await getOrder(id);
   if (!order) notFound();
   const urgency = getUrgency(order);
+  const preview = order.preview_config ?? {};
+  const logoUrl = typeof preview.logoUrl === "string" ? preview.logoUrl : "";
+  const otherDesignUrl = typeof preview.otherDesignUrl === "string" ? preview.otherDesignUrl : "";
+  const customerOrderUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/orders/${order.id}`;
+  const cleanPhone = (order.customer_phone ?? "").replace(/[^\d]/g, "");
+  const designMessage = `Hi ${order.customer_name}, this is inno413 about order ${order.reference_code}. We would like to discuss and fine tune your t-shirt design.`;
+  const designWhatsappLink = cleanPhone
+    ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(designMessage)}`
+    : `https://wa.me/?text=${encodeURIComponent(designMessage)}`;
 
   return (
     <main className="app-shell">
@@ -54,6 +64,8 @@ export default async function StaffOrderPage({ params }: { params: Promise<{ id:
               <p><span>Design service</span>{order.design_service.replaceAll("_", " ")}</p>
               <p><span>Notes</span>{order.design_notes ?? "No notes"}</p>
               <p><span>Design file</span>{order.design_file_url ? <a className="ghost-button" href={order.design_file_url}>Open file</a> : "No file"}</p>
+              <p><span>Logo design</span>{logoUrl ? <a className="ghost-button" href={logoUrl}>Open logo</a> : "No logo uploaded"}</p>
+              <p><span>Other design</span>{otherDesignUrl ? <a className="ghost-button" href={otherDesignUrl}>Open other design</a> : "No other design uploaded"}</p>
             </div>
           </section>
 
@@ -73,8 +85,20 @@ export default async function StaffOrderPage({ params }: { params: Promise<{ id:
             <div className="meta-list">
               <p><span>Delivery</span>{order.delivery_method} {order.delivery_address ? `- ${order.delivery_address}` : ""}</p>
               <p><span>Deposit</span>{depositLabels[order.deposit_status]} / {formatMoney(order.deposit_amount)}</p>
+              <p><span>Customer view</span><a className="ghost-button" href={customerOrderUrl || `/orders/${order.id}`}>Open customer order page</a></p>
             </div>
           </section>
+        </div>
+
+        <div className="grid" style={{ marginTop: 18 }}>
+          <section className="card">
+            <h2>Design contact</h2>
+            <p className="muted">Use WhatsApp to discuss and fine tune the customer design.</p>
+            <div className="actions">
+              <a className="button" href={designWhatsappLink} rel="noreferrer" target="_blank">WhatsApp Customer</a>
+            </div>
+          </section>
+          <StaffDeliveryActions order={order} />
         </div>
 
         <section className="card" style={{ marginTop: 18 }}>

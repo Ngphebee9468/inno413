@@ -4,6 +4,7 @@ import { depositLabels, formatMoney, getUrgency, statusLabels } from "@/lib/orde
 import { hasStaffAccess } from "@/lib/staff-auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Order } from "@/lib/types";
+import { StaffDeliveryActions } from "./StaffDeliveryActions";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function StaffPage() {
           <div className="card">
             <table className="table">
               <thead>
-                <tr><th>Reference</th><th>Customer</th><th>Urgency</th><th>Status</th><th>Invoice</th><th>Deposit</th><th>Total</th></tr>
+                <tr><th>Reference</th><th>Customer</th><th>Urgency</th><th>Status</th><th>Invoice</th><th>Deposit</th><th>Total</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {orders.map((order) => {
@@ -75,6 +76,7 @@ export default async function StaffPage() {
                         </Link>
                       </td>
                       <td>{formatMoney(invoice?.subtotal ?? order.deposit_amount)}</td>
+                      <td><StaffDeliveryActions compact order={order} /></td>
                     </tr>
                   );
                 })}

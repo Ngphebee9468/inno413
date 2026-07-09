@@ -68,13 +68,13 @@ textarea {
 
 .brand-mark {
   align-items: center;
-  background: linear-gradient(135deg, var(--ink), var(--leaf));
-  border-radius: 6px;
-  color: white;
+  background: url("/inno413-logo.png") center / contain no-repeat;
+  color: transparent;
   display: inline-flex;
-  height: 36px;
+  height: 52px;
   justify-content: center;
-  width: 36px;
+  overflow: hidden;
+  width: 64px;
 }
 
 .nav {

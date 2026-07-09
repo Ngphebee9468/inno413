@@ -46,6 +46,7 @@ create table if not exists orders (
   customer_name text not null,
   customer_email text not null,
   customer_phone text,
+  access_password_hash text,
   design_service text not null check (design_service in ('use_mine', 'redesign_mine', 'from_scratch', 'slight_modification')),
   design_file_url text,
   design_notes text,
@@ -131,11 +132,11 @@ create policy "activities_v1_read" on activities for select using (true);
 drop policy if exists "activities_v1_write" on activities;
 create policy "activities_v1_write" on activities for all using (true) with check (true);
 
-insert into orders (id, reference_code, customer_name, customer_email, customer_phone, design_service, garment_type, base_colour, delivery_method, delivery_address, needed_by, total_quantity, deposit_status, order_status, design_notes, material_type_id) values
-  ('22222222-0000-0000-0000-000000000001', 'ORD-DEMO0001', 'Ahmad Razif', 'ahmad@example.com', '+601112345678', 'from_scratch', 'jersey', 'Navy Blue', 'deliver', '12 Jalan Bukit Bintang, KL 55100', '2025-08-15', 22, 'paid', 'in_production', 'Football jerseys for our company team, need number 1-22, logo on chest', '11111111-0000-0000-0000-000000000001'),
-  ('22222222-0000-0000-0000-000000000002', 'ORD-DEMO0002', 'Siti Nabilah', 'siti@example.com', '+601187654321', 'slight_modification', 'tshirt', 'White', 'self_collect', null, '2025-07-30', 50, 'unpaid', 'pending', 'Volunteer event t-shirts, our logo provided, just need resizing and colour change to white', '11111111-0000-0000-0000-000000000002'),
-  ('22222222-0000-0000-0000-000000000003', 'ORD-DEMO0003', 'Chen Wei Liang', 'wei@example.com', '+60197778888', 'redesign_mine', 'polo', 'Black', 'deliver', '88 Jalan Ampang, KL 50450', '2025-09-01', 10, 'paid', 'ready', 'Corporate polo shirts, existing logo needs a modern redesign', '11111111-0000-0000-0000-000000000003'),
-  ('22222222-0000-0000-0000-000000000004', 'ORD-DEMO0004', 'Priya Ramasamy', 'priya@example.com', '+60163334444', 'use_mine', 'tshirt', 'Red', 'self_collect', null, '2025-08-05', 30, 'paid', 'delivered', 'Family reunion shirts, design ready, just print as-is', '11111111-0000-0000-0000-000000000004')
+insert into orders (id, reference_code, customer_name, customer_email, customer_phone, access_password_hash, design_service, garment_type, base_colour, delivery_method, delivery_address, needed_by, total_quantity, deposit_status, order_status, design_notes, material_type_id) values
+  ('22222222-0000-0000-0000-000000000001', 'ORD-DEMO0001', 'Ahmad Razif', 'ahmad@example.com', '+601112345678', '9fbe9d7db8ea4c98329a58b7384e3164592db3928b5af4c284c309ec6b3affea', 'from_scratch', 'jersey', 'Navy Blue', 'deliver', '12 Jalan Bukit Bintang, KL 55100', '2025-08-15', 22, 'paid', 'in_production', 'Football jerseys for our company team, need number 1-22, logo on chest', '11111111-0000-0000-0000-000000000001'),
+  ('22222222-0000-0000-0000-000000000002', 'ORD-DEMO0002', 'Siti Nabilah', 'siti@example.com', '+601187654321', '9fbe9d7db8ea4c98329a58b7384e3164592db3928b5af4c284c309ec6b3affea', 'slight_modification', 'tshirt', 'White', 'self_collect', null, '2025-07-30', 50, 'unpaid', 'pending', 'Volunteer event t-shirts, our logo provided, just need resizing and colour change to white', '11111111-0000-0000-0000-000000000002'),
+  ('22222222-0000-0000-0000-000000000003', 'ORD-DEMO0003', 'Chen Wei Liang', 'wei@example.com', '+60197778888', '9fbe9d7db8ea4c98329a58b7384e3164592db3928b5af4c284c309ec6b3affea', 'redesign_mine', 'polo', 'Black', 'deliver', '88 Jalan Ampang, KL 50450', '2025-09-01', 10, 'paid', 'ready', 'Corporate polo shirts, existing logo needs a modern redesign', '11111111-0000-0000-0000-000000000003'),
+  ('22222222-0000-0000-0000-000000000004', 'ORD-DEMO0004', 'Priya Ramasamy', 'priya@example.com', '+60163334444', '9fbe9d7db8ea4c98329a58b7384e3164592db3928b5af4c284c309ec6b3affea', 'use_mine', 'tshirt', 'Red', 'self_collect', null, '2025-08-05', 30, 'paid', 'delivered', 'Family reunion shirts, design ready, just print as-is', '11111111-0000-0000-0000-000000000004')
 on conflict (reference_code) do nothing;
 
 insert into order_line_items (id, order_id, size, quantity, colour) values

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { depositLabels, formatMoney, statusLabels } from "@/lib/orders";
+import { hasStaffAccess } from "@/lib/staff-auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Order } from "@/lib/types";
 import { PaymentReminderActions } from "./PaymentReminderActions";
@@ -23,6 +24,7 @@ export default async function PaymentReminderPage({
 }: {
   searchParams: Promise<{ order?: string }>;
 }) {
+  if (!(await hasStaffAccess())) redirect("/staff/login");
   const { order: orderId } = await searchParams;
   const order = await getOrder(orderId);
   if (!order) notFound();

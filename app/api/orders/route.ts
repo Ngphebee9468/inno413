@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeDeposit, computeOrderTotal, getUnitPrice } from "@/lib/orders";
+import { hashOrderPassword } from "@/lib/order-access";
 import type { OrderPayload } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -9,8 +10,11 @@ export async function POST(request: Request) {
     const lineItems = body.line_items ?? [];
     const totalQuantity = lineItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-    if (!body.customer_name || !body.customer_email || !body.material_type_id || totalQuantity <= 0) {
+    if (!body.customer_name || !body.customer_email || !body.access_password || !body.material_type_id || totalQuantity <= 0) {
       return NextResponse.json({ error: "Missing required order details." }, { status: 400 });
+    }
+    if (body.access_password.length < 6) {
+      return NextResponse.json({ error: "Order password must be at least 6 characters." }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -23,6 +27,7 @@ export async function POST(request: Request) {
         customer_name: body.customer_name,
         customer_email: body.customer_email,
         customer_phone: body.customer_phone ?? null,
+        access_password_hash: hashOrderPassword(body.access_password),
         design_service: body.design_service,
         design_file_url: body.design_file_url ?? null,
         design_notes: body.design_notes ?? null,

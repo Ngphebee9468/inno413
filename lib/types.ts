@@ -58,6 +58,7 @@ export type Order = {
   customer_name: string;
   customer_email: string;
   customer_phone: string | null;
+  access_password_hash?: string | null;
   design_service: string;
   design_file_url: string | null;
   design_notes: string | null;
@@ -84,6 +85,7 @@ export type OrderPayload = {
   customer_name: string;
   customer_email: string;
   customer_phone?: string;
+  access_password?: string;
   design_service: string;
   design_file_url?: string;
   design_notes?: string;

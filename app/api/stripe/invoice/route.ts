@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { isStaffRequest } from "@/lib/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe, stripeAccountOptions } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   try {
+    if (!isStaffRequest(request)) return NextResponse.json({ error: "Staff login required." }, { status: 401 });
     const { invoiceId } = (await request.json()) as { invoiceId?: string };
     if (!invoiceId) return NextResponse.json({ error: "invoiceId is required." }, { status: 400 });
     if (!process.env.STRIPE_SECRET_KEY) {

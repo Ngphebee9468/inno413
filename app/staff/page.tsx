@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { depositLabels, formatMoney, getUrgency, statusLabels } from "@/lib/orders";
+import { hasStaffAccess } from "@/lib/staff-auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Order } from "@/lib/types";
 
@@ -25,6 +27,7 @@ async function getOrders() {
 }
 
 export default async function StaffPage() {
+  if (!(await hasStaffAccess())) redirect("/staff/login");
   const { orders, error } = await getOrders();
 
   return (

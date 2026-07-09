@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { allowedTransitions } from "@/lib/orders";
+import { isStaffRequest } from "@/lib/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    if (!isStaffRequest(request)) return NextResponse.json({ error: "Staff login required." }, { status: 401 });
     const { id } = await params;
     const { status } = (await request.json()) as { status?: string };
     if (!status) return NextResponse.json({ error: "status is required." }, { status: 400 });

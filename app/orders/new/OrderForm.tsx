@@ -48,6 +48,8 @@ export function OrderForm({ materials }: Props) {
     customer_name: "",
     customer_email: "",
     customer_phone: "",
+    access_password: "",
+    confirm_access_password: "",
     design_service: "from_scratch",
     design_notes: "",
     material_type_id: materials[0]?.id ?? "",
@@ -122,6 +124,8 @@ export function OrderForm({ materials }: Props) {
 
   function validate() {
     if (!form.customer_name || !form.customer_email) return "Customer name and email are required.";
+    if (form.access_password.length < 6) return "Create an order password with at least 6 characters.";
+    if (form.access_password !== form.confirm_access_password) return "Order passwords do not match.";
     if (!form.material_type_id) return "Choose a material.";
     if (totalQuantity <= 0) return "Add at least one size quantity.";
     if (!form.needed_by) return "Choose a needed-by date.";
@@ -223,6 +227,8 @@ export function OrderForm({ materials }: Props) {
               <div className="field"><label>Name</label><input value={form.customer_name} onChange={(e) => update("customer_name", e.target.value)} /></div>
               <div className="field"><label>Email</label><input type="email" value={form.customer_email} onChange={(e) => update("customer_email", e.target.value)} /></div>
               <div className="field"><label>Phone</label><input value={form.customer_phone} onChange={(e) => update("customer_phone", e.target.value)} /></div>
+              <div className="field"><label>Order Password</label><input type="password" value={form.access_password} onChange={(e) => update("access_password", e.target.value)} /></div>
+              <div className="field"><label>Confirm Password</label><input type="password" value={form.confirm_access_password} onChange={(e) => update("confirm_access_password", e.target.value)} /></div>
               <div className="field"><label>Design Service</label><select value={form.design_service} onChange={(e) => update("design_service", e.target.value)}><option value="use_mine">Use my design</option><option value="redesign_mine">Redesign mine</option><option value="from_scratch">Design from scratch</option><option value="slight_modification">Slight modification</option></select></div>
               <div className="field"><label>Custom T-shirt</label><a className="ghost-button" href={whatsappUrl} rel="noreferrer" target="_blank">Chat on WhatsApp</a></div>
               <div className="field"><label>Upload Design</label><input accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" type="file" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} /></div>
@@ -232,6 +238,7 @@ export function OrderForm({ materials }: Props) {
               <div className="field"><label>Font Size</label><input max="240" min="64" type="range" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /><input max="240" min="64" type="number" value={form.font_size} onChange={(e) => update("font_size", e.target.value)} /></div>
               <div className="field"><label>Upload Font</label><input accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" type="file" onChange={(e) => e.target.files?.[0] && uploadFontFile(e.target.files[0])} /></div>
               <div className="field full"><label>Design Notes</label><textarea value={form.design_notes} onChange={(e) => update("design_notes", e.target.value)} /></div>
+              <p className="muted full">Please remember this password. You will need it, together with your email or mobile number, to access your order details and invoice after submission.</p>
             </div>
           ) : null}
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Order } from "@/lib/types";
 import { depositLabels, getUrgency, statusLabels } from "@/lib/orders";
+import { maskEmail, maskName } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ async function getOrders() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("*, material_types(*), order_line_items(*), invoices(*)")
+    .select("id, created_at, reference_code, customer_name, customer_email, deposit_status, order_status, needed_by")
     .order("created_at", { ascending: false });
 
   if (error) return { orders: [] as Order[], error: error.message };
@@ -42,7 +43,7 @@ export default async function Home() {
             <p className="eyebrow">Order board</p>
             <h1>Custom apparel orders</h1>
           </div>
-          <p className="muted">Live order data from Supabase, visible without a login for demo-first v1.</p>
+          <p className="muted">Public board shows only masked customer details. Open your own order with your email or mobile number and password.</p>
         </div>
 
         {error ? (
@@ -66,12 +67,11 @@ export default async function Home() {
                     <span className={`badge ${order.order_status}`}>{statusLabels[order.order_status]}</span>
                   </div>
                   <div>
-                    <h3>{order.customer_name}</h3>
-                    <p className="muted">{order.design_notes || "No design notes yet"}</p>
+                    <h3>{maskName(order.customer_name)}</h3>
+                    <p className="muted">{maskEmail(order.customer_email)}</p>
                   </div>
                   <div className="meta-list">
-                    <p><span>Material</span>{order.material_types?.name ?? "Not selected"} / {order.base_colour ?? "No colour"}</p>
-                    <p><span>Quantity</span>{order.total_quantity} pieces</p>
+                    <p><span>Details</span>Hidden until customer login</p>
                     <p><span>Deposit</span>{depositLabels[order.deposit_status]}</p>
                   </div>
                   <div className="card-row">

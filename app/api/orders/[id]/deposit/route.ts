@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { isStaffRequest } from "@/lib/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function PATCH(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    if (!isStaffRequest(request)) return NextResponse.json({ error: "Staff login required." }, { status: 401 });
     const { id } = await params;
     const supabase = createAdminClient();
     await supabase.from("orders").update({ deposit_status: "paid" }).eq("id", id);

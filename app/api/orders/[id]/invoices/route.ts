@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { isStaffRequest } from "@/lib/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    if (!isStaffRequest(request)) return NextResponse.json({ error: "Staff login required." }, { status: 401 });
     const { id } = await params;
     const { subtotal, deposit_paid, notes } = (await request.json()) as {
       subtotal?: number;

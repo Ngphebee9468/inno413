@@ -1,27 +1,22 @@
 import Link from "next/link";
-import { OrderAccess } from "./OrderAccess";
+import { StaffLoginForm } from "./StaffLoginForm";
 
-export const dynamic = "force-dynamic";
-
-export default async function CustomerOrderPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-
+export default function StaffLoginPage() {
   return (
     <main className="app-shell">
       <header className="topbar">
         <Link className="brand" href="/"><span className="brand-mark">i</span><span>inno413</span></Link>
         <nav className="nav"><Link className="ghost-button" href="/">Orders</Link><Link className="button" href="/orders/new">New Order</Link></nav>
       </header>
-
       <section className="page">
         <div className="page-header">
           <div>
-            <p className="eyebrow">Private order access</p>
-            <h1>Order details</h1>
+            <p className="eyebrow">Private staff area</p>
+            <h1>Locked dashboard</h1>
           </div>
-          <p className="muted">Only the customer who created this order can open the full details and payment link.</p>
+          <p className="muted">Customer order details are hidden until staff login.</p>
         </div>
-        <OrderAccess orderId={id} />
+        <StaffLoginForm />
       </section>
     </main>
   );

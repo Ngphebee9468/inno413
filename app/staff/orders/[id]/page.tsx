@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { depositLabels, formatMoney, getUrgency, statusLabels } from "@/lib/orders";
+import { hasStaffAccess } from "@/lib/staff-auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Order } from "@/lib/types";
 import { StaffOrderActions } from "../../StaffOrderActions";
@@ -20,6 +21,7 @@ async function getOrder(id: string) {
 }
 
 export default async function StaffOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  if (!(await hasStaffAccess())) redirect("/staff/login");
   const { id } = await params;
   const order = await getOrder(id);
   if (!order) notFound();

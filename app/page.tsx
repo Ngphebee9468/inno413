@@ -40,7 +40,7 @@ export default async function Home() {
       <section className="hero">
         <div className="hero-copy">
           <p className="eyebrow">Inno413 Enterprise</p>
-          <h1>Custom shirts for for teams that want to look good together</h1>
+          <h1>Custom shirts for teams that want to look good together</h1>
           <p className="hero-text">Design your own, create from us. Upload your artwork, choose your garment, confirm sizes, and start with a 10% deposit.</p>
           <div className="hero-actions">
             <Link className="button" href="/orders/new">Start New Order</Link>

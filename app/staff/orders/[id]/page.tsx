@@ -13,13 +13,23 @@ export const dynamic = "force-dynamic";
 async function getOrder(id: string) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  const orderQuery = supabase
     .from("orders")
-    .select("*, material_types(*), order_line_items(*), invoices(*), activities(*)")
-    .eq("id", id)
-    .maybeSingle();
+    .select("*, material_types(*), order_line_items(*), invoices(*)");
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const { data, error } = await (isUuid ? orderQuery.eq("id", id) : orderQuery.eq("reference_code", id)).maybeSingle();
   if (error) console.error("[staff:order]", error);
-  return data as Order | null;
+  if (!data) return null;
+
+  const { data: activities, error: activitiesError } = await supabase
+    .from("activities")
+    .select("*")
+    .eq("entity_type", "orders")
+    .eq("entity_id", data.id)
+    .order("created_at", { ascending: false });
+  if (activitiesError) console.error("[staff:order:activities]", activitiesError);
+
+  return { ...data, activities: activities ?? [] } as Order;
 }
 
 export default async function StaffOrderPage({ params }: { params: Promise<{ id: string }> }) {

@@ -67,12 +67,12 @@ export default async function StaffPage() {
                       <td><span className={`badge ${urgency.label.toLowerCase()}`}>{urgency.label}</span></td>
                       <td><span className={`badge ${order.order_status}`}>{statusLabels[order.order_status]}</span></td>
                       <td>
-                        <Link className={`badge ${invoice?.payment_status ?? "outstanding"}`} href={invoice ? `/staff/invoices/${invoice.id}` : `/staff/payment-reminder?order=${order.id}`}>
+                        <Link className={`badge ${invoice?.payment_status ?? "outstanding"}`} href={`/staff/orders/${order.id}`}>
                           {invoice ? `${invoice.invoice_number} / ${invoice.payment_status}` : "deposit reminder"}
                         </Link>
                       </td>
                       <td>
-                        <Link href={`/staff/payment-reminder?order=${order.id}`}>
+                        <Link href={`/staff/orders/${order.id}`}>
                           {depositLabels[order.deposit_status]}
                         </Link>
                       </td>

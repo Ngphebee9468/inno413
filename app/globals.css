@@ -92,12 +92,12 @@ textarea {
 .hero {
   align-items: center;
   display: grid;
-  gap: clamp(22px, 3vw, 52px);
-  grid-template-columns: minmax(360px, .82fr) minmax(430px, 1.18fr);
+  gap: clamp(22px, 4vw, 72px);
+  grid-template-columns: minmax(420px, .88fr) minmax(620px, 1.12fr);
   margin: 0 auto;
   max-width: none;
-  min-height: calc(100vh - 90px);
-  padding: clamp(24px, 4vw, 56px) clamp(20px, 6vw, 96px);
+  min-height: calc(100svh - 90px);
+  padding: clamp(8px, 1.4vw, 22px) clamp(24px, 3.6vw, 70px);
   width: 100%;
 }
 
@@ -151,15 +151,18 @@ textarea {
   border: 1px solid rgba(15, 118, 110, .16);
   border-radius: 8px;
   box-shadow: 0 28px 80px rgba(20, 68, 55, .18);
-  min-height: min(620px, calc(100vh - 180px));
+  justify-self: stretch;
+  max-height: calc(100svh - 116px);
+  min-height: min(800px, calc(100svh - 116px));
   overflow: hidden;
   position: relative;
+  width: min(100%, calc(100svh - 116px));
 }
 
 .teamwear-hero img {
   display: block;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center center;
   width: 100%;
 }
@@ -523,7 +526,7 @@ textarea {
   .hero {
     grid-template-columns: 1fr;
     min-height: auto;
-    padding: 24px 16px 34px;
+    padding: 18px 16px 34px;
   }
 
   .hero-copy {
@@ -541,7 +544,9 @@ textarea {
 
   .teamwear-hero {
     aspect-ratio: 1 / 1;
+    max-height: none;
     min-height: 0;
+    width: 100%;
   }
 
   .teamwear-caption {
@@ -592,12 +597,13 @@ textarea {
 
 @media (min-width: 1400px) {
   .hero {
-    grid-template-columns: minmax(430px, .75fr) minmax(620px, 1.25fr);
-    padding-left: clamp(72px, 8vw, 140px);
-    padding-right: clamp(72px, 8vw, 140px);
+    grid-template-columns: minmax(500px, .86fr) minmax(760px, 1.14fr);
+    padding-left: clamp(28px, 3vw, 72px);
+    padding-right: clamp(28px, 3vw, 72px);
   }
 
   .teamwear-hero {
-    min-height: min(680px, calc(100vh - 170px));
+    min-height: min(860px, calc(100svh - 112px));
+    width: min(100%, calc(100svh - 112px));
   }
 }
